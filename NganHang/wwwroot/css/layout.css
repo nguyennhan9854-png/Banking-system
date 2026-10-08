@@ -1,0 +1,281 @@
+/* =========================================================
+   LAYOUT CHUNG: Sidebar + Header + Banner
+   ========================================================= */
+
+/* ---------- SIDEBAR ---------- */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--sidebar-w);
+  background: linear-gradient(180deg, #0A1A4F 0%, #0B2163 55%, #0D2A78 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+  overflow: hidden;
+}
+
+/* Tranh tòa nhà ngân hàng + sóng ánh sáng ở nửa dưới */
+.sidebar__art {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 96px;
+  height: 345px;
+  background: url("../assets/images/sidebar-building.jpg") center bottom / cover no-repeat;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 28%, #000 85%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 28%, #000 85%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sidebar__logo {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 14px;
+  padding: 25px 24px 0 30px;
+  height: 92px;
+}
+.sidebar__logo-mark { width: 44px; height: 44px; flex: none; }
+.sidebar__logo-text {
+  font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em;
+}
+
+.sidebar__nav {
+  position: relative; z-index: 1;
+  list-style: none; margin: 16px 0 0; padding: 0 17px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.nav-link {
+  display: flex; align-items: center; gap: 18px;
+  height: 52px; padding: 0 18px;
+  border-radius: var(--radius-md);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px; font-weight: 500;
+  background: none; border: 0; width: 100%; text-align: left;
+  transition: background-color .2s, color .2s;
+}
+.nav-link:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.nav-link.is-active {
+  background: var(--primary);
+  color: #fff; font-weight: 600;
+  box-shadow: 0 6px 16px rgba(30, 91, 216, 0.45);
+}
+.nav-link .ic { width: 22px; height: 22px; }
+
+.sidebar__foot {
+  position: relative; z-index: 1;
+  margin-top: auto;
+  padding: 0 30px 50px;
+  font-style: italic; font-size: 16px; line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+}
+.sidebar__foot::after {
+  content: ""; display: block;
+  width: 30px; height: 3px; margin-top: 14px;
+  background: #3B82F6; border-radius: 2px;
+}
+
+/* ---------- KHUNG NỘI DUNG ---------- */
+.app {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  padding: 0 var(--pad) var(--pad);
+  min-width: 0;
+}
+
+/* ---------- HEADER ---------- */
+.topbar {
+  height: var(--header-h);
+  display: flex; align-items: center; gap: 16px;
+  padding-left: 6px;
+}
+.menu-toggle {
+  display: none;
+  width: 44px; height: 44px; border-radius: var(--radius-md);
+  border: 0; background: #fff; box-shadow: var(--shadow);
+  align-items: center; justify-content: center; color: var(--navy);
+}
+.search {
+  flex: 0 1 676px;
+  min-width: 0;
+  height: 44px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px;
+  background: #EAEFF7;
+  border-radius: var(--radius-md);
+  transition: box-shadow .2s, background .2s;
+}
+.search:focus-within { background: #fff; box-shadow: 0 0 0 2px rgba(30, 91, 216, .35); }
+.search .ic { color: var(--muted); }
+.search input {
+  flex: 1; min-width: 0; height: 100%;
+  border: 0; outline: 0; background: transparent;
+  font-size: 15px;
+}
+.search input::placeholder { color: var(--placeholder); }
+
+.topbar__right { flex: none; margin-left: auto; display: flex; align-items: center; gap: 36px; }
+
+.icon-btn {
+  position: relative;
+  width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; background: transparent; border-radius: 50%;
+  color: var(--navy);
+  transition: background .2s;
+}
+.icon-btn:hover { background: rgba(30, 91, 216, .08); }
+.badge-count {
+  position: absolute; top: 2px; right: 2px;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 9px; border: 2px solid var(--bg-page);
+  background: var(--red); color: #fff;
+  font-size: 11px; font-weight: 700; line-height: 14px; text-align: center;
+}
+
+.user-btn {
+  display: flex; align-items: center; gap: 12px;
+  border: 0; background: transparent; padding: 4px 6px 4px 4px; border-radius: 28px;
+  font-size: 18px; font-weight: 600; color: var(--navy);
+}
+.user-btn:hover { background: rgba(30, 91, 216, .06); }
+.user-btn img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+.user-btn .ic { color: var(--muted); }
+
+/* Dropdown header */
+.dropdown-wrap { position: relative; }
+.dropdown {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  min-width: 240px;
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(15, 27, 61, .14);
+  border: 1px solid var(--border-2);
+  padding: 8px;
+  opacity: 0; visibility: hidden; transform: translateY(-6px);
+  transition: opacity .18s, transform .18s, visibility .18s;
+  z-index: 60;
+}
+.dropdown.is-open { opacity: 1; visibility: visible; transform: none; }
+.dropdown__title {
+  padding: 8px 10px 10px; font-size: 15px; font-weight: 700;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.dropdown__title button {
+  border: 0; background: none; color: var(--primary); font-size: 13px; font-weight: 500;
+}
+.dropdown__item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px; border: 0; background: none; border-radius: 10px;
+  text-align: left; font-size: 14px; color: var(--text);
+}
+.dropdown__item:hover { background: var(--row-hover); }
+.dropdown__item .ic { color: var(--muted); }
+.dropdown__item.is-danger, .dropdown__item.is-danger .ic { color: var(--red); }
+.dropdown__sep { height: 1px; background: var(--border-2); margin: 6px 4px; }
+
+.notif-list { width: 340px; max-width: calc(100vw - 32px); }
+.notif {
+  display: flex; gap: 10px; padding: 10px; border-radius: 10px; width: 100%;
+  border: 0; background: none; text-align: left;
+}
+.notif:hover { background: var(--row-hover); }
+.notif__dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex: none; background: transparent; }
+.notif.is-unread .notif__dot { background: var(--primary); }
+.notif__title { font-size: 14px; font-weight: 600; color: var(--text); }
+.notif:not(.is-unread) .notif__title { font-weight: 500; color: var(--text-2); }
+.notif__time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ---------- BANNER ---------- */
+.banner {
+  position: relative;
+  min-height: 175px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: linear-gradient(90deg, #DCE9FB 0%, #E6EFFC 35%, #EEF4FD 60%, #EAF2FD 100%);
+  padding: 26px 30px 24px;
+  display: flex; align-items: flex-start;
+  isolation: isolate;
+}
+.banner__scene {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 46%;
+  background: url("../assets/images/banner-landscape.jpg") right center / cover no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.55) 22%, #000 45%);
+          mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.55) 22%, #000 45%);
+  z-index: -1;
+}
+.banner__text { max-width: 600px; position: relative; }
+.banner__title {
+  font-size: 36px; font-weight: 800; color: var(--navy);
+  letter-spacing: -0.02em; line-height: 1.2;
+}
+.banner__subtitle { font-size: 22px; font-weight: 500; color: #1E3A8A; margin-top: 6px; line-height: 1.35; }
+.banner__desc { font-size: 15px; color: var(--text-2); line-height: 1.6; margin-top: 14px; max-width: 560px; }
+
+.banner__slogan {
+  position: absolute;
+  left: max(50%, 630px); top: 34px;
+  font-family: var(--font-hand);
+  font-size: 24px; line-height: 1.25; color: #1E3A8A;
+  transform: rotate(-12deg); transform-origin: left top;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.banner__slogan svg { display: block; margin: 4px 0 0 4px; }
+.banner--compact { min-height: 120px; }
+.banner--compact .banner__slogan { top: 22px; font-size: 22px; }
+
+.banner__action { position: absolute; top: 26px; right: 26px; z-index: 2; }
+
+/* ---------- RESPONSIVE KHUNG ---------- */
+@media (max-height: 820px) {
+  .sidebar__art { opacity: .55; }
+}
+@media (max-height: 640px) {
+  .sidebar__art { display: none; }
+}
+
+@media (max-width: 1279px) {
+  .banner__slogan { display: none; }
+}
+
+/* Tablet: sidebar thu thành icon */
+@media (max-width: 1023px) {
+  :root { --sidebar-w: 80px; --pad: 18px; }
+  .sidebar__logo { padding: 24px 0 0; justify-content: center; }
+  .sidebar__logo-text, .nav-link span, .sidebar__foot { display: none; }
+  .sidebar__nav { padding: 0 12px; }
+  .nav-link { justify-content: center; padding: 0; }
+  .sidebar__art { display: none; }
+  .banner__slogan { display: none; }
+  .topbar__right { gap: 16px; }
+}
+
+/* Mobile: sidebar ẩn, mở bằng nút hamburger */
+@media (max-width: 767px) {
+  :root { --sidebar-w: 265px; --pad: 14px; }
+  .sidebar { transform: translateX(-100%); transition: transform .25s ease; box-shadow: 0 0 40px rgba(0,0,0,.3); }
+  .sidebar.is-open { transform: none; }
+  .sidebar__logo { padding: 25px 24px 0 30px; justify-content: flex-start; }
+  .sidebar__logo-text, .nav-link span, .sidebar__foot { display: block; }
+  .sidebar__nav { padding: 0 17px; }
+  .nav-link { justify-content: flex-start; padding: 0 18px; }
+  .sidebar-backdrop {
+    position: fixed; inset: 0; background: rgba(11, 31, 92, .4); z-index: 39;
+    opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s;
+  }
+  .sidebar-backdrop.is-open { opacity: 1; visibility: visible; }
+  .app { margin-left: 0; }
+  .menu-toggle { display: inline-flex; flex: none; }
+  .topbar { gap: 10px; padding-left: 0; }
+  .search { flex: 1 1 auto; }
+  .topbar__right { gap: 4px; }
+  .user-btn span, .user-btn .ic { display: none; }
+  .user-btn img { width: 40px; height: 40px; }
+  .banner { padding: 20px 18px; min-height: 0; }
+  .banner__scene { display: none; }
+  .banner__title { font-size: 26px; }
+  .banner__subtitle { font-size: 17px; }
+  .banner__desc { font-size: 14px; }
+  .banner__action { position: static; margin-top: 14px; }
+  .banner { flex-direction: column; }
+}

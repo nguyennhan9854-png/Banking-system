@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trang chủ – Hệ thống Ngân hàng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Dancing+Script:wght@500;600&display=swap">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages/home.css">
+</head>
+<body>
+  <!-- Sidebar + Header được chèn bằng js/layout.js -->
+  <nav id="app-sidebar"></nav>
+
+  <div class="app">
+    <header id="app-header"></header>
+
+    <main class="home" id="main">
+      <!-- ===== BANNER CHÀO MỪNG ===== -->
+      <section class="banner" aria-labelledby="hello-title">
+        <div class="banner__scene" aria-hidden="true"></div>
+        <div class="banner__text">
+          <h1 class="banner__title" id="hello-title">Xin chào, <span data-user-name>Luân Nhân</span>!</h1>
+          <p class="banner__subtitle" data-greeting>Quản lý tài chính dễ dàng hơn mỗi ngày</p>
+          <p class="banner__desc">Cùng Hệ thống Ngân hàng, bạn có thể theo dõi tài khoản, thực hiện giao dịch và tối ưu hóa dòng tiền một cách an toàn, nhanh chóng.</p>
+        </div>
+        <div class="banner__slogan" aria-hidden="true">
+          Vững vàng hôm nay<br>Cho những điều lớn hơn ngày mai
+          <svg width="120" height="16" viewBox="0 0 120 16"><path d="M2 13C30 4 70 1 118 4" fill="none" stroke="#1E5BD8" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </div>
+      </section>
+
+      <div class="home-grid">
+        <div class="home-main">
+          <!-- ===== HÀNG 1: 2 THẺ TÀI KHOẢN ===== -->
+          <div class="home-accounts" data-home-accounts></div>
+
+          <!-- ===== HÀNG 2: 4 THAO TÁC NHANH ===== -->
+          <div class="quick-row">
+            <button type="button" class="quick quick--green" data-quick="deposit">
+              <span class="quick__ic"><i data-ic="arrowDown" data-size="24" data-stroke="2.6"></i></span>
+              <span><span class="quick__title">Nạp tiền</span><span class="quick__desc">Nạp tiền vào tài khoản</span></span>
+            </button>
+            <button type="button" class="quick quick--red" data-quick="withdraw">
+              <span class="quick__ic"><i data-ic="arrowUp" data-size="24" data-stroke="2.6"></i></span>
+              <span><span class="quick__title">Rút tiền</span><span class="quick__desc">Rút tiền về tài khoản</span></span>
+            </button>
+            <a class="quick quick--blue" href="chuyen-tien.html">
+              <span class="quick__ic"><i data-ic="swap" data-size="24" data-stroke="2.4"></i></span>
+              <span><span class="quick__title">Chuyển tiền</span><span class="quick__desc">Chuyển tiền nhanh chóng</span></span>
+            </a>
+            <a class="quick quick--purple" href="cong-lai.html">
+              <span class="quick__ic"><i data-ic="percent" data-size="24" data-stroke="2.6"></i></span>
+              <span><span class="quick__title">Cộng lãi</span><span class="quick__desc">Tính và cộng lãi tự động</span></span>
+            </a>
+          </div>
+
+          <!-- ===== HÀNG 3: BIỂU ĐỒ + GIAO DỊCH GẦN ĐÂY ===== -->
+          <div class="home-bottom">
+            <section class="card chart-card" aria-labelledby="chart-title">
+              <div class="card__head">
+                <h2 class="card__title" id="chart-title"><i data-ic="chartBars" data-size="22" data-stroke="2.6"></i>Biến động số dư</h2>
+                <label class="sr-only" for="chart-range">Khoảng thời gian</label>
+                <select id="chart-range" class="select select--sm" data-chart-range>
+                  <option value="3">3 tháng gần nhất</option>
+                  <option value="6" selected>6 tháng gần nhất</option>
+                  <option value="12">12 tháng gần nhất</option>
+                </select>
+              </div>
+              <div data-home-chart></div>
+            </section>
+
+            <section class="card recent-card" aria-labelledby="recent-title">
+              <div class="card__head">
+                <h2 class="card__title" id="recent-title"><i data-ic="list" data-size="22"></i>Giao dịch gần đây</h2>
+                <a class="link-more" href="giao-dich.html">Xem tất cả <i data-ic="arrowRight" data-size="16"></i></a>
+              </div>
+              <div class="table-wrap" data-home-recent></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- ===== CỘT PHẢI ===== -->
+        <aside class="home-aside">
+          <section class="card tip-card" aria-labelledby="tip-title">
+            <h2 class="card__title card__title--sm" id="tip-title"><span class="tip-card__bulb"><i data-ic="bulb" data-size="22"></i></span>Gợi ý tài chính thông minh</h2>
+            <div class="tip-card__box" data-tip>
+              <img class="tip-card__img" src="assets/images/jar.png" alt="">
+              <div class="tip-card__text">
+                <h3 data-tip-title></h3>
+                <p data-tip-desc></p>
+              </div>
+              <button type="button" class="tip-card__next" data-tip-next aria-label="Gợi ý tiếp theo"><i data-ic="chevronRight" data-size="16"></i></button>
+            </div>
+            <button type="button" class="btn btn--primary btn--block" data-tip-cta></button>
+          </section>
+
+          <section class="card overview-card" aria-labelledby="overview-title">
+            <h2 class="card__title card__title--sm" id="overview-title"><i data-ic="chartBars" data-size="22" data-stroke="2.6"></i>Tổng quan tài khoản</h2>
+            <div class="overview">
+              <div data-donut></div>
+              <ul class="overview__legend" data-legend></ul>
+            </div>
+          </section>
+
+          <button type="button" class="card sec-card" data-action="security">
+            <span class="sec-card__ic"><i data-ic="shield" data-size="26"></i></span>
+            <span class="sec-card__text">
+              <span class="sec-card__title">An toàn và bảo mật</span>
+              <span class="sec-card__desc">Tài khoản của bạn đang được bảo vệ với lớp bảo mật cao nhất.</span>
+            </span>
+            <span class="round-btn round-btn--grey"><i data-ic="chevronRight" data-size="18"></i></span>
+          </button>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/icons.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/money.js"></script>
+  <script src="js/pages/home.js"></script>
+</body>
+</html>

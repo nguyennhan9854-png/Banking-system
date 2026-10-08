@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tài khoản của tôi – Hệ thống Ngân hàng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Dancing+Script:wght@500;600&display=swap">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages/accounts.css">
+</head>
+<body>
+  <nav id="app-sidebar"></nav>
+
+  <div class="app">
+    <header id="app-header"></header>
+
+    <main class="accounts-page" id="main">
+      <!-- ===== BANNER ===== -->
+      <section class="banner banner--accounts" aria-labelledby="page-title">
+        <div class="banner__scene" aria-hidden="true"></div>
+        <div class="banner__text">
+          <h1 class="banner__title" id="page-title">Tài khoản của tôi</h1>
+          <p class="banner__subtitle">Quản lý và theo dõi tất cả tài khoản ngân hàng của bạn</p>
+        </div>
+        <div class="banner__slogan" aria-hidden="true">
+          Đồng hành cùng bạn<br>trên mọi mục tiêu tài chính
+          <svg width="110" height="16" viewBox="0 0 110 16"><path d="M2 13C28 4 64 1 108 4" fill="none" stroke="#1E5BD8" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="banner__action">
+          <button type="button" class="btn btn--primary btn--lg" data-open-account><i data-ic="plus" data-size="20" data-stroke="2.6"></i>Mở tài khoản mới</button>
+        </div>
+      </section>
+
+      <!-- ===== DANH SÁCH TÀI KHOẢN ===== -->
+      <section aria-label="Danh sách tài khoản">
+        <div class="acct-grid" data-accounts></div>
+      </section>
+
+      <!-- ===== BIỂU ĐỒ + HOẠT ĐỘNG GẦN ĐÂY ===== -->
+      <div class="acct-bottom">
+        <section class="card acct-chart" aria-labelledby="acct-chart-title">
+          <div class="card__head">
+            <h2 class="card__title" id="acct-chart-title"><i data-ic="chartBars" data-size="22" data-stroke="2.6"></i>Biến động số dư theo tài khoản</h2>
+            <label class="sr-only" for="chart-account">Chọn tài khoản</label>
+            <select id="chart-account" class="select select--sm" data-chart-account></select>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Khoảng thời gian" data-range-tabs>
+            <button type="button" class="tab is-active" role="tab" aria-selected="true" data-range="6m">6 tháng gần nhất</button>
+            <button type="button" class="tab" role="tab" aria-selected="false" data-range="3m">3 tháng</button>
+            <button type="button" class="tab" role="tab" aria-selected="false" data-range="1m">1 tháng</button>
+            <button type="button" class="tab" role="tab" aria-selected="false" data-range="custom">Tùy chọn</button>
+          </div>
+          <div class="custom-range" data-custom-range hidden>
+            <label>Từ ngày <input type="date" class="input" data-from></label>
+            <label>Đến ngày <input type="date" class="input" data-to></label>
+            <button type="button" class="btn btn--primary" data-apply-range>Áp dụng</button>
+            <p class="field-error" data-range-error role="alert"></p>
+          </div>
+          <div class="acct-chart__plot" data-acct-chart></div>
+          <div class="chart-legend"><i></i>Số dư tài khoản (đ)</div>
+        </section>
+
+        <section class="card acct-activity" aria-labelledby="activity-title">
+          <div class="card__head">
+            <h2 class="card__title" id="activity-title"><i data-ic="clock" data-size="22"></i>Hoạt động tài khoản gần đây</h2>
+            <a class="link-more" href="giao-dich.html">Xem tất cả <i data-ic="chevronRight" data-size="16"></i></a>
+          </div>
+          <div class="table-wrap" data-activity></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/icons.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/money.js"></script>
+  <script src="js/pages/accounts.js"></script>
+</body>
+</html>

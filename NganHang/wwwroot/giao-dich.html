@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giao dịch – Hệ thống Ngân hàng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Dancing+Script:wght@500;600&display=swap">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages/transactions.css">
+</head>
+<body>
+  <nav id="app-sidebar"></nav>
+
+  <div class="app">
+    <header id="app-header"></header>
+
+    <main class="tx-page" id="main">
+      <section class="banner banner--compact" aria-labelledby="page-title">
+        <div class="banner__scene" aria-hidden="true"></div>
+        <div class="banner__text">
+          <h1 class="banner__title" id="page-title">Giao dịch</h1>
+          <p class="banner__subtitle">Xem và quản lý lịch sử giao dịch của bạn</p>
+        </div>
+        <div class="banner__slogan" aria-hidden="true">
+          Mỗi giao dịch<br>Là một bước tiến đến tương lai
+          <svg width="110" height="16" viewBox="0 0 110 16"><path d="M2 13C28 4 64 1 108 4" fill="none" stroke="#1E5BD8" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </div>
+      </section>
+
+      <section class="card tx-filters" aria-label="Bộ lọc giao dịch">
+        <div class="field">
+          <label class="field__label" for="f-q">Tìm kiếm giao dịch</label>
+          <div class="input-ic"><i data-ic="search" data-size="18"></i><input id="f-q" class="input" type="search" placeholder="Nhập nội dung, mã GD, tên người nhận..." data-f-q></div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="f-acc">Tài khoản</label>
+          <select id="f-acc" class="select" data-f-acc></select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="f-type">Loại giao dịch</label>
+          <select id="f-type" class="select" data-f-type>
+            <option value="">Tất cả loại giao dịch</option>
+            <option value="deposit">Nạp tiền</option>
+            <option value="withdraw">Rút tiền</option>
+            <option value="transfer">Chuyển khoản / Nhận tiền</option>
+            <option value="interest">Cộng lãi</option>
+            <option value="payment">Thanh toán / Mua sắm</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn--soft" data-f-reset><i data-ic="refresh" data-size="18"></i>Xóa bộ lọc</button>
+      </section>
+
+      <section class="card" aria-labelledby="tx-title">
+        <div class="card__head">
+          <h2 class="card__title" id="tx-title"><i data-ic="list" data-size="22"></i>Lịch sử giao dịch</h2>
+          <span class="tx-summary" data-summary></span>
+        </div>
+        <div class="table-wrap" data-tx-table></div>
+        <div class="pager" data-pager></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/icons.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/money.js"></script>
+  <script src="js/pages/transactions.js"></script>
+</body>
+</html>

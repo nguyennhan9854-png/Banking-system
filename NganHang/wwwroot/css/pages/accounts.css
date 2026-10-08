@@ -1,0 +1,200 @@
+/* =========================================================
+   TRANG "TÀI KHOẢN CỦA TÔI"
+   ========================================================= */
+.accounts-page { display: flex; flex-direction: column; gap: var(--gap); }
+
+/* Banner: slogan nằm dưới tiêu đề, cảnh thành phố rộng hơn */
+.banner--accounts { min-height: 182px; flex-direction: column; }
+.banner--accounts .banner__scene { width: 58%; }
+.banner--accounts .banner__slogan {
+  position: static; transform: rotate(-4deg); transform-origin: left center;
+  margin-top: 14px; font-size: 26px; line-height: 1.15;
+  display: block; /* luôn hiện vì nằm dưới tiêu đề, không đè chữ */
+}
+
+/* ---------- LƯỚI THẺ TÀI KHOẢN ---------- */
+.acct-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: var(--gap);
+}
+.acct {
+  position: relative;
+  display: flex; flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  container-type: inline-size;
+  transition: transform .25s, box-shadow .25s;
+  scroll-margin-top: 20px;
+}
+.acct:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.acct.is-new { animation: acct-flash 1.6s ease; }
+@keyframes acct-flash {
+  0%, 100% { box-shadow: var(--shadow); }
+  25%, 60% { box-shadow: 0 0 0 3px rgba(30, 91, 216, .45), var(--shadow-hover); }
+}
+
+.acct__top {
+  position: relative;
+  margin: 8px 8px 0;
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  min-height: 178px;
+  overflow: hidden;
+}
+.acct--save .acct__top { background: linear-gradient(120deg, #F2F7FF 0%, #E6EFFD 55%, #DCE8FC 100%); }
+.acct--pay .acct__top { background: linear-gradient(120deg, #FFF8EE 0%, #FFF0DC 55%, #FFE6C7 100%); }
+
+.acct__head-row { display: flex; gap: 20px; align-items: flex-start; position: relative; z-index: 1; }
+.acct__icon {
+  width: 64px; height: 64px; border-radius: 16px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center; color: #fff;
+}
+.acct--save .acct__icon { background: linear-gradient(135deg, #3B82F6, #1E5BD8); box-shadow: 0 8px 18px rgba(30, 91, 216, .3); }
+.acct--pay .acct__icon { background: linear-gradient(135deg, #FB923C, #F97316); box-shadow: 0 8px 18px rgba(249, 115, 22, .3); }
+.acct__titlebar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.acct__title { font-size: 18px; font-weight: 700; color: var(--navy); }
+.acct__label { font-size: 13px; color: var(--text-2); margin-top: 6px; }
+.acct__num { display: flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 600; color: var(--text); }
+
+.acct__balance { position: relative; z-index: 1; margin-top: 10px; }
+.acct__amount { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+.acct__amount strong {
+  font-size: 30px; font-weight: 800; color: var(--navy); letter-spacing: -0.02em; white-space: nowrap; line-height: 1.2;
+}
+.acct__amount strong.is-negative { color: var(--red); }
+.acct__amount strong.is-hidden { letter-spacing: 0.08em; }
+.eye-btn {
+  border: 0; background: transparent; color: var(--text-2);
+  width: 34px; height: 34px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.eye-btn:hover { background: rgba(255, 255, 255, .7); color: var(--primary); }
+.acct__overdraft { font-size: 12.5px; color: #B45309; margin-top: 2px; }
+
+.acct__art { position: absolute; right: 6px; bottom: 4px; z-index: 0; pointer-events: none; }
+.acct--save .acct__art { width: 188px; }
+.acct--pay .acct__art { width: 240px; right: 0; bottom: 0; }
+
+/* Hàng 3 thông tin */
+.acct__info {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 16px 16px 14px;
+}
+.acct__info-item { display: flex; gap: 10px; align-items: center; padding: 0 10px; min-width: 0; }
+.acct__info-item + .acct__info-item { border-left: 1px solid var(--border); }
+.acct__info-item:first-child { padding-left: 4px; }
+.acct__info-ic {
+  width: 38px; height: 38px; border-radius: 50%; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.acct--save .acct__info-ic { background: #EEF3FC; color: var(--primary); }
+.acct--pay .acct__info-ic { background: #FFF1E2; color: #EA580C; }
+.acct__info-label { font-size: 13px; color: var(--muted); line-height: 1.35; }
+.acct__info-value { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.35; }
+.acct__info-value.is-green { color: var(--green); }
+
+/* Hàng nút */
+.acct__actions { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 12px; padding: 0 16px 16px; margin-top: auto; }
+.btn--acc-pay { background: linear-gradient(90deg, #F97316, #EA580C); color: #fff; box-shadow: 0 6px 14px rgba(234, 88, 12, .25); }
+.btn--acc-pay:hover { background: linear-gradient(90deg, #EA580C, #C2410C); }
+
+/* Thẻ hẹp -> thông tin xếp lại cho gọn */
+@container (max-width: 520px) {
+  .acct__art { opacity: .4; }
+  .acct--save .acct__art { width: 140px; }
+  .acct--pay .acct__art { width: 170px; }
+  .acct__info { grid-template-columns: 1fr 1fr; row-gap: 12px; }
+  .acct__info-item:nth-child(3) { border-left: 0; padding-left: 4px; }
+}
+@container (max-width: 380px) {
+  .acct__icon { width: 52px; height: 52px; }
+  .acct__head-row { gap: 14px; }
+  .acct__amount strong { font-size: 26px; }
+  .acct__info { grid-template-columns: 1fr; }
+  .acct__info-item { border-left: 0 !important; padding-left: 4px; }
+  .acct__actions { grid-template-columns: 1fr 1fr; }
+  .acct__actions .btn:first-child { grid-column: 1 / -1; }
+}
+
+/* ---------- BIỂU ĐỒ + HOẠT ĐỘNG ---------- */
+.acct-bottom {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: var(--gap);
+}
+.acct-chart .card__head { flex-wrap: wrap; }
+.acct-chart .tabs { margin-bottom: 14px; }
+.acct-chart__plot { min-height: 250px; }
+.custom-range {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-bottom: 12px;
+}
+.custom-range label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.custom-range .input { height: 38px; width: 160px; }
+.custom-range .btn { height: 38px; }
+.custom-range .field-error { width: 100%; }
+
+.acct-activity .table { font-size: 13.5px; }
+.acct-activity .table th { white-space: normal; line-height: 1.3; }
+.acct-activity .table-wrap > .table { min-width: 0; }
+@media (max-width: 767px) { .acct-activity .table-wrap > .table { min-width: 600px; } }
+.acct-activity .table td, .acct-activity .table th { padding: 9px 8px; }
+.acct-activity .cell-time { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.acct-activity .cell-amount { font-size: 14px; }
+
+/* ---------- MODAL CHI TIẾT TÀI KHOẢN ---------- */
+.acct-detail__head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+.acct-detail__art { width: 170px; height: 110px; object-fit: contain; border-radius: 50% 50% 18px 18px; }
+.acct-detail__head .modal__title { padding: 0; font-size: 24px; }
+
+/* ---------- MODAL MỞ TÀI KHOẢN ---------- */
+.type-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.type-card {
+  position: relative; text-align: left;
+  border: 1.5px solid var(--border); border-radius: 14px; background: #fff;
+  padding: 16px; display: flex; flex-direction: column; gap: 4px;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.type-card:hover { border-color: #BFD3F7; }
+.type-card[aria-checked="true"] { border-color: var(--primary); background: #F3F7FF; box-shadow: 0 0 0 3px rgba(30, 91, 216, .1); }
+.type-card__ic {
+  width: 64px; height: 64px; border-radius: 16px; margin-bottom: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.type-card--save .type-card__ic { background: #E3EEFF; color: var(--primary); }
+.type-card--pay .type-card__ic { background: #FFE9CC; color: #F08A0B; }
+.type-card__title { font-size: 19px; font-weight: 700; color: var(--navy); }
+.type-card__desc { font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+.type-card__check {
+  position: absolute; top: 12px; right: 12px;
+  width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: #fff;
+  display: none; align-items: center; justify-content: center;
+}
+.type-card[aria-checked="true"] .type-card__check { display: inline-flex; }
+
+.form-rows { display: flex; flex-direction: column; gap: 12px; }
+.form-row { display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: center; gap: 12px; }
+.form-row > label, .form-row > span { font-size: 15px; color: var(--text); }
+.form-row .money-input { height: 44px; border-width: 1px; border-radius: 10px; padding: 0 14px; }
+.form-row .money-input input { font-size: 15px; font-weight: 500; }
+.form-row .money-input__unit { font-size: 15px; }
+.form-row .field-error { grid-column: 2; margin-top: -6px; }
+.input.is-green { color: var(--green); font-weight: 600; }
+
+@media (max-width: 1200px) {
+  .acct-bottom { grid-template-columns: 1fr; }
+}
+@media (max-width: 767px) {
+  .banner--accounts .banner__slogan { font-size: 21px; }
+}
+@media (max-width: 560px) {
+  .type-pick { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .type-card { padding: 12px; }
+  .type-card__ic { width: 48px; height: 48px; }
+  .type-card__title { font-size: 16px; }
+  .type-card__desc { font-size: 12.5px; }
+  .form-row { grid-template-columns: 1fr; gap: 6px; }
+  .form-row .field-error { grid-column: 1; margin-top: 0; }
+}

@@ -1,0 +1,38 @@
+/* =========================================================
+   TRANG GIAO DỊCH (bản cơ bản – đọc chung dữ liệu với các trang khác)
+   ========================================================= */
+.tx-page { display: flex; flex-direction: column; gap: var(--gap); }
+
+.tx-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 16px; align-items: end;
+}
+.input-ic { position: relative; }
+.input-ic .ic { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.input-ic .input { padding-left: 42px; }
+
+.tx-summary { font-size: 14px; color: var(--muted); }
+.tx-page .table-wrap > .table { min-width: 960px; }
+.tx-type {
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font-weight: 500;
+}
+.tx-type .tx-ic { width: 30px; height: 30px; }
+
+.pager { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+.pager button {
+  min-width: 36px; height: 36px; padding: 0 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; font-size: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pager button:hover:not([disabled]) { border-color: var(--primary); color: var(--primary); }
+.pager button.is-active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.pager button[disabled] { opacity: .45; cursor: not-allowed; }
+.pager__info { margin-right: auto; font-size: 14px; color: var(--muted); }
+
+@media (max-width: 1100px) {
+  .tx-filters { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .tx-filters { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,35 @@
+### Thử API bằng VS Code (extension REST Client) hoặc Visual Studio
+@host = http://localhost:5000
+
+### Toàn bộ dữ liệu
+GET {{host}}/api/state
+
+### Danh sách tài khoản
+GET {{host}}/api/accounts
+
+### 5 giao dịch mới nhất của tài khoản tiết kiệm
+GET {{host}}/api/transactions?accountId=acc-saving&limit=5
+
+### Lịch sử số dư 6 tháng (cho biểu đồ)
+GET {{host}}/api/balance-history?accountIds=acc-saving&from=2026-05-01&to=2026-10-31&mode=monthly
+
+### Nạp 1.000.000 đ vào tài khoản tiết kiệm
+POST {{host}}/api/accounts/acc-saving/deposit
+Content-Type: application/json
+
+{ "amount": 1000000 }
+
+### Rút 5.000.000 đ từ tài khoản thanh toán (dùng thấu chi)
+POST {{host}}/api/accounts/acc-payment/withdraw
+Content-Type: application/json
+
+{ "amount": 5000000 }
+
+### Mở tài khoản tiết kiệm kỳ hạn 12 tháng
+POST {{host}}/api/accounts
+Content-Type: application/json
+
+{ "type": "saving", "termMonths": 12, "initialAmount": 5000000, "overdraftLimit": 0 }
+
+### Khôi phục dữ liệu mẫu
+POST {{host}}/api/system/reset
