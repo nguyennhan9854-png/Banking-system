@@ -20,6 +20,11 @@ public class Account
     /// <summary>Hạn mức thấu chi – chỉ tài khoản thanh toán</summary>
     public long OverdraftLimit { get; set; }
     public string Branch { get; set; } = "";
+    /// <summary>
+    /// Ngày bắt đầu kỳ tính lãi hiện tại (= ngày cộng lãi gần nhất). Chỉ dùng cho tài khoản tiết kiệm.
+    /// Để trống thì hệ thống tự suy ra từ giao dịch cộng lãi gần nhất hoặc ngày mở tài khoản.
+    /// </summary>
+    public DateTime? LastInterestDate { get; set; }
 }
 
 /// <summary>Một giao dịch. Số dư sau giao dịch KHÔNG lưu mà được tính lại khi đọc.</summary>

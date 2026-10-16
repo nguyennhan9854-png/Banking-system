@@ -33,3 +33,27 @@ Content-Type: application/json
 
 ### Khôi phục dữ liệu mẫu
 POST {{host}}/api/system/reset
+
+### Chuyển nội bộ 1.000.000 đ từ tài khoản thanh toán sang tiết kiệm
+POST {{host}}/api/transfers
+Content-Type: application/json
+
+{ "fromAccountId": "acc-payment", "toAccountId": "acc-saving", "amount": 1000000, "note": "Gui tiet kiem" }
+
+### Chuyển ra ngân hàng khác (dùng một phần thấu chi)
+POST {{host}}/api/transfers
+Content-Type: application/json
+
+{ "fromAccountId": "acc-payment", "toAccountNumber": "0987654321", "toName": "NGUYEN VAN A", "toBank": "Vietcombank", "amount": 5000000, "note": "Tra tien" }
+
+### Chuyển vượt hạn mức thấu chi -> 400
+POST {{host}}/api/transfers
+Content-Type: application/json
+
+{ "fromAccountId": "acc-payment", "toAccountNumber": "0987654321", "toName": "NGUYEN VAN A", "toBank": "Vietcombank", "amount": 99000000 }
+
+### Chạy ngay đợt cộng lãi tự động (chỉ cộng kỳ đã đến hạn)
+POST {{host}}/api/interest/run
+
+### Nhận ngay tiền lãi tạm tính của tài khoản tiết kiệm
+POST {{host}}/api/interest/acc-saving/apply

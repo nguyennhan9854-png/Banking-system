@@ -125,7 +125,8 @@ App.store = (function () {
    * Kiểm tra nhanh khi đang gõ số tiền (để hiện cảnh báo ngay).
    * Server vẫn kiểm tra lại lần nữa khi bấm xác nhận.
    */
-  function checkWithdraw(accountId, amount) {
+  function checkWithdraw(accountId, amount, verb) {
+    verb = verb || "rút";
     const acc = getAccount(accountId);
     if (!acc) return { ok: false, error: "Không tìm thấy tài khoản." };
     if (!amount || amount <= 0) return { ok: false, error: "Vui lòng nhập số tiền lớn hơn 0." };
@@ -134,8 +135,8 @@ App.store = (function () {
       return {
         ok: false, available: available,
         error: acc.type === "payment"
-          ? "Số tiền rút vượt quá hạn mức khả dụng."
-          : "Số dư không đủ. Số tiền rút tối đa là " + App.utils.formatVND(available) + "."
+          ? "Số tiền " + verb + " vượt quá hạn mức khả dụng."
+          : "Số dư không đủ. Số tiền " + verb + " tối đa là " + App.utils.formatVND(available) + "."
       };
     }
     return { ok: true, available: available, usesOverdraft: acc.type === "payment" && amount > acc.balance };
@@ -166,6 +167,47 @@ App.store = (function () {
     if (!r.ok) return { ok: false, error: r.error };
     await afterWrite("withdraw");
     return { ok: true, account: getAccount(accountId) || r.data.account, tx: r.data.transaction, usesOverdraft: r.data.usesOverdraft };
+  }
+
+  /**
+   * Chuyển tiền. opts = { fromAccountId, toAccountId? | (toAccountNumber, toName, toBank), amount, note }
+   * Server kiểm tra lại số dư và hạn mức thấu chi trước khi ghi.
+   */
+  async function transfer(opts) {
+    const r = await request("POST", "/transfers", {
+      fromAccountId: opts.fromAccountId,
+      toAccountId: opts.toAccountId || null,
+      toAccountNumber: opts.toAccountNumber || null,
+      toName: opts.toName || null,
+      toBank: opts.toBank || null,
+      amount: Number(opts.amount) || 0,
+      note: opts.note || null
+    });
+    if (!r.ok) return { ok: false, error: r.error };
+    await afterWrite("transfer");
+    return {
+      ok: true,
+      from: getAccount(opts.fromAccountId) || r.data.from,
+      outTx: getTransaction(r.data.outTransaction.id) || r.data.outTransaction,
+      inTx: r.data.inTransaction,
+      usesOverdraft: r.data.usesOverdraft
+    };
+  }
+
+  /** Nhận ngay tiền lãi tạm tính của 1 tài khoản tiết kiệm */
+  async function applyInterest(accountId) {
+    const r = await request("POST", "/interest/" + encodeURIComponent(accountId) + "/apply");
+    if (!r.ok) return { ok: false, error: r.error };
+    await afterWrite("interest");
+    return { ok: true, transactions: r.data.transactions, total: r.data.totalAmount };
+  }
+
+  /** Chạy đợt cộng lãi tự động ngay (chỉ cộng các kỳ đã đến hạn) */
+  async function runInterest() {
+    const r = await request("POST", "/interest/run");
+    if (!r.ok) return { ok: false, error: r.error };
+    await afterWrite("interest");
+    return { ok: true, transactions: r.data.transactions, total: r.data.totalAmount };
   }
 
   /** opts = { type, termMonths, initialAmount, overdraftLimit } */
@@ -222,7 +264,7 @@ App.store = (function () {
     getAccounts: getAccounts, getAccount: getAccount, getPrimary: getPrimary,
     getTransactions: getTransactions, getTransaction: getTransaction,
     totalBalance: totalBalance, growth: growth, savingTerm: savingTerm, checkWithdraw: checkWithdraw,
-    balanceSeries: balanceSeries, deposit: deposit, withdraw: withdraw, openAccount: openAccount,
+    balanceSeries: balanceSeries, deposit: deposit, withdraw: withdraw, transfer: transfer, applyInterest: applyInterest, runInterest: runInterest, openAccount: openAccount,
     markNotificationRead: markNotificationRead, markAllNotificationsRead: markAllNotificationsRead,
     setOtp: setOtp, reset: reset, subscribe: subscribe
   };

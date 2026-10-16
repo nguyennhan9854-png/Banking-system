@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/pages/placeholder.css">
+  <link rel="stylesheet" href="css/pages/transfer.css">
 </head>
 <body>
   <nav id="app-sidebar"></nav>
@@ -18,7 +18,8 @@
   <div class="app">
     <header id="app-header"></header>
 
-    <main class="ph-page" id="main" data-page-key="transfer">
+    <main class="tf-page" id="main">
+      <!-- ===== BANNER ===== -->
       <section class="banner banner--compact" aria-labelledby="page-title">
         <div class="banner__scene" aria-hidden="true"></div>
         <div class="banner__text">
@@ -31,15 +32,126 @@
         </div>
       </section>
 
-      <section class="card ph-card">
-        <span class="ph-card__ic"><i data-ic="construction" data-size="34"></i></span>
-        <h2>Trang “Chuyển tiền” sẽ được hoàn thiện ở bước tiếp theo</h2>
-        <p>Trong lúc chờ, bạn vẫn có thể nạp và rút tiền ở Trang chủ hoặc Tài khoản của tôi. Mọi số dư đã dùng chung một nguồn dữ liệu nên trang Chuyển tiền chỉ cần đọc lại là khớp.</p>
-        <div class="ph-card__actions">
-          <a class="btn btn--primary" href="index.html"><i data-ic="home" data-size="18"></i>Về trang chủ</a>
-          <a class="btn btn--outline" href="tai-khoan.html"><i data-ic="user" data-size="18"></i>Tài khoản của tôi</a>
-        </div>
-      </section>
+      <div class="tf-grid">
+        <!-- ===== FORM CHUYỂN TIỀN ===== -->
+        <section class="card tf-form" aria-labelledby="tf-title">
+          <h2 class="card__title" id="tf-title"><i data-ic="send" data-size="22"></i>Thông tin chuyển tiền</h2>
+
+          <form data-tf-form novalidate>
+            <!-- 1. Tài khoản nguồn -->
+            <div class="tf-step">
+              <span class="tf-step__no" aria-hidden="true">1</span>
+              <div class="tf-step__body">
+                <label class="field__label" for="tf-from">Chuyển từ tài khoản</label>
+                <select id="tf-from" class="select" data-tf-from></select>
+                <div class="tf-from-info" data-tf-from-info></div>
+              </div>
+            </div>
+
+            <!-- 2. Người nhận -->
+            <div class="tf-step">
+              <span class="tf-step__no" aria-hidden="true">2</span>
+              <div class="tf-step__body">
+                <span class="field__label" id="tf-to-label">Chuyển đến</span>
+                <div class="tf-switch" role="radiogroup" aria-labelledby="tf-to-label">
+                  <button type="button" role="radio" aria-checked="true" data-tf-mode="other">
+                    <i data-ic="user" data-size="18"></i>Người nhận khác
+                  </button>
+                  <button type="button" role="radio" aria-checked="false" data-tf-mode="own">
+                    <i data-ic="swap" data-size="18"></i>Tài khoản của tôi
+                  </button>
+                </div>
+
+                <div class="tf-fields" data-tf-panel="other">
+                  <div class="field">
+                    <label class="field__label" for="tf-bank">Ngân hàng nhận</label>
+                    <select id="tf-bank" class="select" data-tf-bank>
+                      <option value="">Chọn ngân hàng</option>
+                      <option>Hệ thống Ngân hàng</option>
+                      <option>Vietcombank</option>
+                      <option>VietinBank</option>
+                      <option>BIDV</option>
+                      <option>Agribank</option>
+                      <option>Techcombank</option>
+                      <option>MB Bank</option>
+                      <option>ACB</option>
+                      <option>VPBank</option>
+                      <option>Sacombank</option>
+                      <option>TPBank</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="field__label" for="tf-number">Số tài khoản nhận</label>
+                    <input id="tf-number" class="input" inputmode="numeric" autocomplete="off" placeholder="VD: 0987 6543 21" data-tf-number>
+                  </div>
+                  <div class="field tf-fields__full">
+                    <label class="field__label" for="tf-name">Tên người nhận</label>
+                    <input id="tf-name" class="input tf-upper" autocomplete="off" maxlength="50" placeholder="VD: NGUYEN VAN A" data-tf-name>
+                  </div>
+                </div>
+
+                <div class="tf-fields" data-tf-panel="own" hidden>
+                  <div class="field tf-fields__full">
+                    <label class="field__label" for="tf-to">Tài khoản nhận</label>
+                    <select id="tf-to" class="select" data-tf-to></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Số tiền + nội dung -->
+            <div class="tf-step">
+              <span class="tf-step__no" aria-hidden="true">3</span>
+              <div class="tf-step__body">
+                <label class="field__label" for="tf-amount">Số tiền chuyển</label>
+                <div class="money-input is-orange" data-tf-wrap>
+                  <input id="tf-amount" type="text" inputmode="numeric" placeholder="Nhập số tiền" autocomplete="off" aria-describedby="tf-error">
+                  <span class="money-input__unit">đ</span>
+                </div>
+                <div class="chips" data-tf-chips>
+                  <button type="button" class="chip" data-chip="500000">500.000 đ</button>
+                  <button type="button" class="chip" data-chip="1000000">1.000.000 đ</button>
+                  <button type="button" class="chip" data-chip="2000000">2.000.000 đ</button>
+                  <button type="button" class="chip" data-chip="5000000">5.000.000 đ</button>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="tf-note">Nội dung chuyển khoản</label>
+                  <input id="tf-note" class="input" maxlength="100" autocomplete="off" data-tf-note>
+                </div>
+              </div>
+            </div>
+
+            <p class="field-error tf-error" id="tf-error" role="alert" data-tf-error></p>
+            <div data-tf-note-box></div>
+
+            <div class="tf-actions">
+              <button type="reset" class="btn btn--outline btn--lg">Nhập lại</button>
+              <button type="submit" class="btn btn--primary btn--lg" data-tf-submit>Tiếp tục <i data-ic="arrowRight" data-size="18"></i></button>
+            </div>
+          </form>
+        </section>
+
+        <!-- ===== CỘT PHẢI ===== -->
+        <aside class="tf-aside">
+          <section class="card tf-summary" aria-labelledby="sum-title">
+            <h2 class="card__title card__title--sm" id="sum-title"><i data-ic="receipt" data-size="20"></i>Tóm tắt giao dịch</h2>
+            <dl class="tf-sum" data-tf-summary></dl>
+          </section>
+
+          <section class="card tf-recent" aria-labelledby="recent-title">
+            <div class="card__head">
+              <h2 class="card__title card__title--sm" id="recent-title"><i data-ic="clock" data-size="20"></i>Gần đây</h2>
+              <a class="link-more" href="giao-dich.html?q=chuy%E1%BB%83n">Xem tất cả <i data-ic="chevronRight" data-size="16"></i></a>
+            </div>
+            <ul class="tf-recent__list" data-tf-recent></ul>
+          </section>
+
+          <div class="note note--info tf-rules">
+            <i data-ic="shield" data-size="20"></i>
+            <span>Tài khoản thanh toán được chuyển vượt số dư trong <strong>hạn mức thấu chi</strong>. Tài khoản tiết kiệm chỉ được chuyển tối đa bằng số dư. Miễn phí chuyển tiền.</span>
+          </div>
+        </aside>
+      </div>
     </main>
   </div>
 
@@ -50,6 +162,6 @@
   <script src="js/charts.js"></script>
   <script src="js/layout.js"></script>
   <script src="js/money.js"></script>
-  <script src="js/pages/placeholder.js"></script>
+  <script src="js/pages/transfer.js"></script>
 </body>
 </html>

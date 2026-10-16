@@ -1,0 +1,115 @@
+/* =========================================================
+   TRANG CHUYỂN TIỀN
+   ========================================================= */
+.tf-page { display: flex; flex-direction: column; gap: var(--gap); }
+
+.tf-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--gap);
+  align-items: start;
+}
+.tf-aside { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+
+/* ---------- FORM ---------- */
+.tf-form form { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; }
+.tf-step { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 14px; padding-bottom: 18px; position: relative; }
+.tf-step:not(:last-of-type)::before {
+  content: ""; position: absolute; left: 15px; top: 36px; bottom: 4px; width: 2px; background: var(--border-2);
+}
+.tf-step__no {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--primary-soft); color: var(--primary);
+  font-weight: 700; font-size: 15px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.tf-step__body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.tf-from-info {
+  display: flex; flex-wrap: wrap; gap: 6px 18px;
+  font-size: 13.5px; color: var(--text-2);
+}
+.tf-from-info strong { color: var(--text); }
+.tf-from-info .is-neg { color: var(--red); }
+
+/* Nút chọn kiểu người nhận */
+.tf-switch {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  padding: 4px; background: #EEF2F8; border-radius: 12px;
+}
+.tf-switch button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; border: 0; border-radius: 9px; background: transparent;
+  font-size: 14.5px; font-weight: 500; color: var(--text-2);
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.tf-switch button[aria-checked="true"] {
+  background: #fff; color: var(--primary); font-weight: 600;
+  box-shadow: 0 2px 8px rgba(15, 27, 61, .08);
+}
+
+.tf-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tf-fields__full { grid-column: 1 / -1; }
+.tf-upper { text-transform: uppercase; }
+.tf-upper::placeholder { text-transform: none; }
+
+.tf-error { margin: 0; }
+.tf-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-top: 10px; }
+
+/* ---------- TÓM TẮT ---------- */
+.tf-sum { margin: 14px 0 0; display: flex; flex-direction: column; }
+.tf-sum > div {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--border-2);
+  font-size: 14px;
+}
+.tf-sum > div:last-child { border-bottom: 0; }
+.tf-sum dt { color: var(--muted); flex: none; }
+.tf-sum dd { margin: 0; text-align: right; font-weight: 600; color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+.tf-sum dd small { display: block; font-weight: 400; color: var(--muted); font-size: 12.5px; }
+.tf-sum .is-amount dd { font-size: 20px; font-weight: 800; color: var(--navy); }
+.tf-sum .is-neg { color: var(--red); }
+.tf-sum .is-green { color: var(--green); }
+
+/* ---------- GẦN ĐÂY ---------- */
+.tf-recent__list { list-style: none; margin: 0; padding: 0; }
+.tf-recent__item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 6px; border: 0; background: none; border-radius: 10px; text-align: left;
+}
+.tf-recent__item:hover { background: var(--row-hover); }
+.tf-recent__main { flex: 1; min-width: 0; }
+.tf-recent__name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tf-recent__meta { font-size: 12.5px; color: var(--muted); }
+.tf-recent__amt { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.tf-rules { font-size: 13.5px; }
+
+/* ---------- MODAL XÁC NHẬN / THÀNH CÔNG ---------- */
+.tf-confirm__amount { text-align: center; margin: 6px 0 4px; }
+.tf-confirm__amount strong { display: block; font-size: 32px; font-weight: 800; color: var(--navy); letter-spacing: -0.02em; }
+.tf-confirm__amount span { font-size: 13.5px; color: var(--muted); }
+.tf-success { text-align: center; }
+.tf-success__ic {
+  width: 72px; height: 72px; margin: 4px auto 10px; border-radius: 50%;
+  background: var(--green-soft); color: var(--green);
+  display: flex; align-items: center; justify-content: center;
+}
+.tf-success .modal__title { padding: 0; }
+.tf-success .tf-sum { text-align: left; }
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 1200px) {
+  .tf-grid { grid-template-columns: minmax(0, 1fr); }
+  .tf-aside { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+  .tf-rules { grid-column: 1 / -1; }
+}
+@media (max-width: 767px) {
+  .tf-aside { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .tf-fields { grid-template-columns: 1fr; }
+  .tf-step { grid-template-columns: 1fr; gap: 8px; }
+  .tf-step__no, .tf-step::before { display: none; }
+  .tf-actions { grid-template-columns: 1fr; }
+  .tf-switch button { font-size: 13px; }
+}

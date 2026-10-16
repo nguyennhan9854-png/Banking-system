@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/pages/placeholder.css">
+  <link rel="stylesheet" href="css/pages/interest.css">
 </head>
 <body>
   <nav id="app-sidebar"></nav>
@@ -18,12 +18,13 @@
   <div class="app">
     <header id="app-header"></header>
 
-    <main class="ph-page" id="main" data-page-key="interest">
+    <main class="it-page" id="main">
+      <!-- ===== BANNER ===== -->
       <section class="banner banner--compact" aria-labelledby="page-title">
         <div class="banner__scene" aria-hidden="true"></div>
         <div class="banner__text">
           <h1 class="banner__title" id="page-title">Cộng lãi</h1>
-          <p class="banner__subtitle">Theo dõi và cộng lãi cho tài khoản tiết kiệm</p>
+          <p class="banner__subtitle">Theo dõi tiền lãi tiết kiệm được cộng tự động mỗi tháng</p>
         </div>
         <div class="banner__slogan" aria-hidden="true">
           Tích lũy hôm nay<br>Vững vàng tương lai
@@ -31,15 +32,35 @@
         </div>
       </section>
 
-      <section class="card ph-card">
-        <span class="ph-card__ic"><i data-ic="construction" data-size="34"></i></span>
-        <h2>Trang “Cộng lãi” sẽ được hoàn thiện ở bước tiếp theo</h2>
-        <p>Lãi suất và tiền lãi dự kiến của từng sổ tiết kiệm đã có trong nút “Xem chi tiết” ở trang Tài khoản của tôi.</p>
-        <div class="ph-card__actions">
-          <a class="btn btn--primary" href="index.html"><i data-ic="home" data-size="18"></i>Về trang chủ</a>
-          <a class="btn btn--outline" href="tai-khoan.html"><i data-ic="user" data-size="18"></i>Tài khoản của tôi</a>
-        </div>
+      <!-- ===== TỔNG QUAN ===== -->
+      <section class="it-stats" aria-label="Tổng quan tiền lãi" data-it-stats></section>
+
+      <!-- ===== TỪNG TÀI KHOẢN TIẾT KIỆM ===== -->
+      <section aria-label="Tài khoản tiết kiệm">
+        <div class="it-grid" data-it-accounts></div>
       </section>
+
+      <div class="it-bottom">
+        <!-- ===== LỊCH SỬ CỘNG LÃI ===== -->
+        <section class="card" aria-labelledby="it-history-title">
+          <div class="card__head">
+            <h2 class="card__title" id="it-history-title"><i data-ic="list" data-size="22"></i>Lịch sử cộng lãi</h2>
+            <button type="button" class="btn btn--soft it-run" data-it-run><i data-ic="refresh" data-size="18"></i>Kiểm tra kỳ đến hạn</button>
+          </div>
+          <div class="table-wrap" data-it-history></div>
+        </section>
+
+        <!-- ===== CÁCH TÍNH ===== -->
+        <aside class="card it-howto" aria-labelledby="it-howto-title">
+          <h2 class="card__title card__title--sm" id="it-howto-title"><i data-ic="bulb" data-size="20"></i>Lãi được tính thế nào?</h2>
+          <ol class="it-howto__list">
+            <li><strong>Mỗi ngày</strong> lãi được tính trên số dư cuối ngày:<code>lãi ngày = số dư × lãi suất ÷ 100 ÷ 365</code></li>
+            <li><strong>Mỗi tháng</strong>, đủ 1 tháng kể từ lần cộng trước, hệ thống <strong>tự động cộng</strong> tổng lãi các ngày vào số dư.</li>
+            <li>Mỗi kỳ chỉ cộng <strong>một lần</strong>; giao dịch “Cộng lãi” xuất hiện ở Trang chủ, Tài khoản của tôi và Giao dịch.</li>
+            <li>Bấm <strong>Nhận lãi ngay</strong> để nhận phần lãi tạm tính đến hôm qua; kỳ mới bắt đầu từ hôm nay.</li>
+          </ol>
+        </aside>
+      </div>
     </main>
   </div>
 
@@ -50,6 +71,6 @@
   <script src="js/charts.js"></script>
   <script src="js/layout.js"></script>
   <script src="js/money.js"></script>
-  <script src="js/pages/placeholder.js"></script>
+  <script src="js/pages/interest.js"></script>
 </body>
 </html>

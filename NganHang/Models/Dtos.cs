@@ -21,7 +21,24 @@ public record AccountDto(
     string Branch,
     long AvailableBalance,
     double? GrowthPercent,
-    TermInfo? Term);
+    TermInfo? Term,
+    InterestInfo? Interest);
+
+/// <summary>
+/// Thông tin cộng lãi hằng tháng của tài khoản tiết kiệm.
+/// Lãi tính trên số dư cuối mỗi ngày: lãi ngày = số dư × lãi suất / 100 / 365.
+/// </summary>
+public record InterestInfo(
+    DateTime PeriodStart,
+    DateTime NextInterestDate,
+    int DaysElapsed,
+    int DaysInPeriod,
+    long AccruedInterest,
+    long ProjectedInterest,
+    long TotalReceived);
+
+/// <summary>Kết quả một lần cộng lãi: các giao dịch "Cộng lãi" vừa tạo và tổng tiền lãi.</summary>
+public record InterestRunResult(List<TransactionDto> Transactions, long TotalAmount);
 
 /// <summary>Giao dịch kèm số dư sau giao dịch (tính riêng cho từng tài khoản).</summary>
 public record TransactionDto(
@@ -51,6 +68,14 @@ public record BalancePointDto(DateTime Date, long Value, string Label);
 
 public record DepositWithdrawResult(AccountDto Account, TransactionDto Transaction, bool UsesOverdraft);
 
+/// <summary>Kết quả chuyển tiền: tài khoản nguồn/đích sau khi chuyển và 2 giao dịch được tạo.</summary>
+public record TransferResult(
+    AccountDto From,
+    AccountDto? To,
+    TransactionDto OutTransaction,
+    TransactionDto? InTransaction,
+    bool UsesOverdraft);
+
 public record ErrorDto(string Error);
 
 // ===================== DỮ LIỆU GIAO DIỆN GỬI LÊN =====================
@@ -60,6 +85,19 @@ public record AmountRequest(long Amount);
 public record OpenAccountRequest(string Type, int TermMonths, long InitialAmount, long OverdraftLimit);
 
 public record OtpRequest(bool Enabled);
+
+/// <summary>
+/// Yêu cầu chuyển tiền. Chuyển nội bộ: điền ToAccountId.
+/// Chuyển ra ngoài: điền ToAccountNumber, ToName, ToBank.
+/// </summary>
+public record TransferRequest(
+    string FromAccountId,
+    string? ToAccountId,
+    string? ToAccountNumber,
+    string? ToName,
+    string? ToBank,
+    long Amount,
+    string? Note);
 
 // ===================== KẾT QUẢ NGHIỆP VỤ =====================
 

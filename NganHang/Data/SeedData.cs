@@ -71,7 +71,7 @@ public static class SeedData
             });
         }
 
-        return new BankData
+        var data = new BankData
         {
             Version = 1,
             SeededAt = now,
@@ -109,5 +109,12 @@ public static class SeedData
                 new() { Id = "n3", Title = "Đăng nhập mới trên trình duyệt Chrome", Date = now.AddDays(-5), Read = false }
             }
         };
+
+        // Kỳ tính lãi hiện tại của tài khoản tiết kiệm bắt đầu từ lần cộng lãi gần nhất trong dữ liệu mẫu
+        var saving = data.Accounts.First(a => a.Id == "acc-saving");
+        saving.LastInterestDate = transactions
+            .Where(t => t.AccountId == saving.Id && t.Type == "interest")
+            .Max(t => t.Date).Date;
+        return data;
     }
 }

@@ -1,0 +1,103 @@
+/* =========================================================
+   TRANG CỘNG LÃI
+   ========================================================= */
+.it-page { display: flex; flex-direction: column; gap: var(--gap); }
+
+/* ---------- TỔNG QUAN ---------- */
+.it-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
+.it-stat {
+  display: flex; align-items: center; gap: 14px;
+  background: #fff; border: 1px solid var(--border-2); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow); padding: 18px 20px; min-width: 0;
+}
+.it-stat__ic {
+  width: 48px; height: 48px; border-radius: 14px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.it-stat--purple .it-stat__ic { background: var(--purple-soft); color: var(--purple); }
+.it-stat--green .it-stat__ic { background: var(--green-soft); color: var(--green); }
+.it-stat--blue .it-stat__ic { background: var(--primary-soft); color: var(--primary); }
+.it-stat__label { font-size: 13.5px; color: var(--muted); }
+.it-stat__value { font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: -0.01em; line-height: 1.25; }
+.it-stat__sub { font-size: 12.5px; color: var(--muted); }
+
+/* ---------- THẺ TÀI KHOẢN ---------- */
+.it-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: var(--gap);
+}
+.it-acc {
+  background: #fff; border: 1px solid var(--border-2); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; gap: 16px;
+  min-width: 0; scroll-margin-top: 20px;
+}
+.it-acc.is-new { animation: it-flash 1.6s ease; }
+@keyframes it-flash {
+  0%, 100% { box-shadow: var(--shadow); }
+  30%, 60% { box-shadow: 0 0 0 3px rgba(22, 163, 74, .45), var(--shadow-hover); }
+}
+.it-acc__head { display: flex; align-items: center; gap: 14px; }
+.it-acc__icon {
+  width: 52px; height: 52px; border-radius: 14px; flex: none; overflow: hidden;
+  background: #DCE8FD;
+}
+.it-acc__icon img { width: 100%; height: 100%; object-fit: cover; }
+.it-acc__title { font-size: 17px; font-weight: 700; color: var(--navy); }
+.it-acc__num { font-size: 13.5px; color: var(--muted); }
+.it-acc__rate {
+  margin-left: auto; flex: none;
+  padding: 5px 12px; border-radius: 20px; background: var(--green-soft); color: var(--green);
+  font-size: 14px; font-weight: 700;
+}
+
+.it-period__row { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; color: var(--text-2); }
+.it-period__row strong { color: var(--text); }
+.it-bar { height: 10px; border-radius: 6px; background: #EEF2F8; overflow: hidden; margin: 8px 0 6px; }
+.it-bar span {
+  display: block; height: 100%; border-radius: 6px;
+  background: linear-gradient(90deg, #22C55E, #16A34A);
+  transition: width .6s ease;
+}
+
+.it-figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+.it-fig { padding: 0 12px; min-width: 0; }
+.it-fig:first-child { padding-left: 0; }
+.it-fig + .it-fig { border-left: 1px solid var(--border); }
+.it-fig__label { font-size: 12.5px; color: var(--muted); }
+.it-fig__value { font-size: 17px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.it-fig__value.is-green { color: var(--green); }
+
+.it-acc__actions { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; }
+.btn--green { background: linear-gradient(90deg, #22C55E, #16A34A); color: #fff; box-shadow: 0 6px 14px rgba(22, 163, 74, .25); }
+.btn--green:hover { background: linear-gradient(90deg, #16A34A, #15803D); }
+
+.it-empty { text-align: center; padding: 32px 20px; }
+.it-empty p { color: var(--text-2); margin: 6px 0 14px; }
+
+/* ---------- LỊCH SỬ + CÁCH TÍNH ---------- */
+.it-bottom { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--gap); align-items: start; }
+.it-run { height: 38px; font-size: 14px; }
+.it-howto__list { margin: 14px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: var(--text-2); line-height: 1.55; }
+.it-howto__list strong { color: var(--text); }
+.it-howto__list code {
+  display: block; margin-top: 6px; padding: 8px 10px; border-radius: 8px;
+  background: var(--primary-soft); color: var(--navy); font-family: inherit; font-size: 13px; font-weight: 600;
+}
+
+@media (max-width: 1200px) {
+  .it-bottom { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .it-stats { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .it-figs { grid-template-columns: 1fr 1fr; row-gap: 12px; }
+  .it-fig:nth-child(3) { border-left: 0; padding-left: 0; }
+  .it-acc__actions { grid-template-columns: 1fr; }
+  .it-acc__rate { font-size: 13px; padding: 4px 10px; }
+}
+
+/* Bảng lịch sử: màn hẹp thì cuộn ngang trong card thay vì bóp cột */
+.it-page .table-wrap > .table { min-width: 640px; }
+.it-page .table td:nth-child(3) { min-width: 180px; }

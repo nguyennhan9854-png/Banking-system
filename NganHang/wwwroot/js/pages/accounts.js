@@ -120,7 +120,9 @@ App.boot(function () {
         cell("calendar", "Ngày đáo hạn", term ? U.formatDate(term.maturity) : "—") +
         cell("percent", "Lãi suất", U.formatPercent(acc.interestRate, 1) + "/năm", "is-green") +
         cell("wallet", "Số dư hiện tại", U.formatVND(acc.balance), "is-big") +
-        cell("trendUp", "Tiền lãi dự kiến", term ? U.formatVND(term.estimatedInterest) : "—", "is-big");
+        cell("trendUp", "Tiền lãi dự kiến", term ? U.formatVND(term.estimatedInterest) : "—", "is-big") +
+        cell("calendar", "Ngày cộng lãi tiếp theo", acc.interest ? U.formatDate(acc.interest.nextInterestDate) : "—") +
+        cell("percent", "Lãi tạm tính tháng này", acc.interest ? U.formatVND(acc.interest.accruedInterest) : "—", "is-green");
     }
     const term = isPay ? null : S.savingTerm(acc);
     const box = App.modal.open({

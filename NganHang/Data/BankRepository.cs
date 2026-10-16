@@ -23,14 +23,18 @@ public class BankRepository
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    public BankRepository(IWebHostEnvironment env, ILogger<BankRepository> logger)
+    /// <param name="filePath">Đường dẫn file JSON. Web dùng App_Data/bank-data.json; unit test dùng file tạm riêng.</param>
+    public BankRepository(string filePath, ILogger<BankRepository> logger)
     {
         _logger = logger;
-        var folder = Path.Combine(env.ContentRootPath, "App_Data");
-        Directory.CreateDirectory(folder);
-        _filePath = Path.Combine(folder, "bank-data.json");
+        _filePath = Path.GetFullPath(filePath);
+        var folder = Path.GetDirectoryName(_filePath);
+        if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
         _data = LoadOrSeed();
     }
+
+    /// <summary>Đường dẫn file dữ liệu đang dùng.</summary>
+    public string FilePath => _filePath;
 
     /// <summary>Đọc dữ liệu (không ghi file).</summary>
     public T Read<T>(Func<BankData, T> reader)
