@@ -61,8 +61,8 @@ App.boot(function () {
         "</div>" +
         '<div class="it-figs">' +
           fig("Số dư hiện tại", U.formatVND(a.balance)) +
-          fig("Lãi tạm tính", "+" + U.formatVND(it.accruedInterest), "is-green") +
-          fig("Lãi dự kiến cả kỳ", U.formatVND(it.projectedInterest)) +
+          fig("Lãi tạm tính", (it.accruedInterest > 0 ? "+" : "") + U.formatVND(it.accruedInterest), "is-green") +
+          fig("Lãi dự kiến tháng này", U.formatVND(it.projectedInterest)) +
         "</div>" +
         '<div class="it-acc__actions">' +
           '<button type="button" class="btn btn--green" data-apply="' + a.id + '"' + (it.accruedInterest > 0 ? "" : ' disabled title="Chưa có tiền lãi để nhận"') + ">" +
