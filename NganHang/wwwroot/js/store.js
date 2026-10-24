@@ -164,6 +164,20 @@ App.store = (function () {
     return r.data.map(function (p) { return { date: new Date(p.date), value: p.value, label: p.label }; });
   }
 
+  /**
+   * Thống kê theo kỳ (server tính). opts = { from: Date, to: Date, groupBy: "month"|"quarter"|"day", accountId? }
+   * Trả về { ok, data } hoặc { ok:false, error }.
+   */
+  async function getStatistics(opts) {
+    const U = App.utils;
+    const qs = "?from=" + U.toInputDate(opts.from) + "&to=" + U.toInputDate(opts.to) +
+      "&groupBy=" + encodeURIComponent(opts.groupBy || "month") +
+      (opts.accountId ? "&accountId=" + encodeURIComponent(opts.accountId) : "");
+    const r = await request("GET", "/statistics" + qs);
+    if (!r.ok) return { ok: false, error: r.error };
+    return { ok: true, data: r.data };
+  }
+
   async function deposit(accountId, amount) {
     const r = await request("POST", "/accounts/" + encodeURIComponent(accountId) + "/deposit", { amount: amount });
     if (!r.ok) return failed(r);
@@ -273,7 +287,7 @@ App.store = (function () {
     getAccounts: getAccounts, getAccount: getAccount, getPrimary: getPrimary,
     getTransactions: getTransactions, getTransaction: getTransaction,
     totalBalance: totalBalance, growth: growth, savingTerm: savingTerm, checkWithdraw: checkWithdraw,
-    balanceSeries: balanceSeries, deposit: deposit, withdraw: withdraw, transfer: transfer, applyInterest: applyInterest, runInterest: runInterest, openAccount: openAccount,
+    balanceSeries: balanceSeries, getStatistics: getStatistics, deposit: deposit, withdraw: withdraw, transfer: transfer, applyInterest: applyInterest, runInterest: runInterest, openAccount: openAccount,
     markNotificationRead: markNotificationRead, markAllNotificationsRead: markAllNotificationsRead,
     setOtp: setOtp, reset: reset, subscribe: subscribe
   };

@@ -85,4 +85,7 @@ public static class TransactionTypes
 
     public static bool IsIncoming(string type) => IncomingTypes.Contains(type);
     public static bool IsKnown(string type) => AllTypes.Contains(type);
+
+    /// <summary>Danh sách mọi loại giao dịch (dùng cho thống kê).</summary>
+    public static IReadOnlyCollection<string> All => AllTypes;
 }

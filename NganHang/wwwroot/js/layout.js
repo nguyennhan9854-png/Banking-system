@@ -13,7 +13,8 @@ App.layout = (function () {
     { key: "accounts", label: "Tài khoản của tôi", icon: "user", href: "tai-khoan.html" },
     { key: "transactions", label: "Giao dịch", icon: "receipt", href: "giao-dich.html" },
     { key: "transfer", label: "Chuyển tiền", icon: "send", href: "chuyen-tien.html" },
-    { key: "interest", label: "Cộng lãi", icon: "barChart", href: "cong-lai.html" }
+    { key: "interest", label: "Cộng lãi", icon: "barChart", href: "cong-lai.html" },
+    { key: "statistics", label: "Thống kê", icon: "pieChart", href: "thong-ke.html" }
   ];
 
   let activeKey = "home";

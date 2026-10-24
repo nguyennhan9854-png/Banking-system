@@ -2,6 +2,7 @@
    BIỂU ĐỒ SVG TỰ VẼ (không phụ thuộc thư viện ngoài → chạy offline)
    - App.charts.line(el, { points:[{label, value, date}], height, highlightLast, animate })
    - App.charts.donut(el, { segments:[{label, value, color}], centerHtml, size, thickness })
+   - App.charts.bars(el, { groups:[{label, values:[...] }], series:[{name, color}], height })
    ========================================================= */
 window.App = window.App || {};
 
@@ -254,5 +255,107 @@ App.charts = (function () {
     container.appendChild(center);
   }
 
-  return { line: line, donut: donut, niceScale: niceScale };
+  /* ---------------- BIỂU ĐỒ CỘT NHÓM (tiền vào / tiền ra theo kỳ) ---------------- */
+  function bars(container, opts) {
+    container._barOpts = opts;
+    renderBars(container, opts.animate !== false);
+    observe(container, function () { renderBars(container, false); });
+  }
+
+  function renderBars(container, animate) {
+    const opts = container._barOpts;
+    const groups = opts.groups || [];
+    const series = opts.series || [];
+    container.innerHTML = "";
+    container.classList.add("chart");
+    const height = opts.height || 260;
+    const width = Math.max(container.clientWidth, 260);
+    const all = [];
+    groups.forEach(function (g) { g.values.forEach(function (v) { all.push(v); }); });
+    if (!groups.length || !all.some(function (v) { return v > 0; })) {
+      container.innerHTML = '<div class="empty">Không có giao dịch nào trong khoảng thời gian này</div>';
+      return;
+    }
+
+    const scale = niceScale(0, Math.max.apply(null, all), 4);
+    const longest = scale.ticks.reduce(function (m, v) { return Math.max(m, U.formatShort(v).length); }, 1);
+    const pad = { top: 14, right: 12, bottom: 30, left: Math.max(40, longest * 7.4 + 14) };
+    const plotW = width - pad.left - pad.right;
+    const plotH = height - pad.top - pad.bottom;
+    const n = groups.length;
+    const slot = plotW / n;
+    const k = Math.max(series.length, 1);
+    const barW = Math.max(3, Math.min(28, (slot * 0.72) / k));
+    const yAt = function (v) { return pad.top + plotH - (v / scale.max) * plotH; };
+
+    const svg = el("svg", { viewBox: "0 0 " + width + " " + height, width: width, height: height, role: "img" });
+    svg.setAttribute("aria-label", opts.ariaLabel || "Biểu đồ cột");
+
+    scale.ticks.forEach(function (v) {
+      const y = yAt(v);
+      svg.appendChild(el("line", { x1: pad.left, x2: width - pad.right, y1: y, y2: y, stroke: v === 0 ? "#DCE3EE" : "#EEF2F8", "stroke-dasharray": v === 0 ? "" : "4 4" }));
+      const t = el("text", { x: pad.left - 10, y: y + 4, "text-anchor": "end", "font-size": "12", fill: "#6B7590" });
+      t.textContent = U.formatShort(v);
+      svg.appendChild(t);
+    });
+
+    const labelW = groups.reduce(function (m, g) { return Math.max(m, String(g.label).length * 6.4); }, 0) + 6;
+    const every = Math.max(1, Math.ceil(labelW / slot));
+    const g = el("g", {});
+    if (animate) g.setAttribute("class", "chart-grow");
+    groups.forEach(function (grp, i) {
+      const cx = pad.left + slot * i + slot / 2;
+      const left = cx - (barW * k + 2 * (k - 1)) / 2;
+      grp.values.forEach(function (v, j) {
+        const h = Math.max(v > 0 ? 2 : 0, (v / scale.max) * plotH);
+        const r = el("rect", {
+          x: left + j * (barW + 2), y: pad.top + plotH - h, width: barW, height: h,
+          rx: Math.min(4, barW / 2), fill: (series[j] && series[j].color) || "#1E5BD8"
+        });
+        g.appendChild(r);
+      });
+      if (i % every === 0) {
+        const t = el("text", { x: cx, y: height - 8, "text-anchor": "middle", "font-size": "11.5", fill: "#6B7590" });
+        t.textContent = grp.label;
+        svg.appendChild(t);
+      }
+    });
+    svg.appendChild(g);
+
+    const hover = el("rect", { x: 0, y: pad.top, width: slot, height: plotH, fill: "#1E5BD8", opacity: "0", rx: 6 });
+    svg.insertBefore(hover, g);
+    const hit = el("rect", { x: pad.left, y: 0, width: plotW, height: height, fill: "transparent" });
+    svg.appendChild(hit);
+    container.appendChild(svg);
+
+    const tip = document.createElement("div");
+    tip.className = "chart__tooltip chart__tooltip--wide";
+    container.appendChild(tip);
+
+    function show(i) {
+      const grp = groups[i];
+      hover.setAttribute("x", pad.left + slot * i);
+      hover.setAttribute("opacity", "0.06");
+      tip.innerHTML = "<small></small>" + series.map(function (s, j) {
+        return '<span class="chart__row"><i style="background:' + s.color + '"></i>' + U.escapeHtml(s.name) + ": " + U.formatVND(grp.values[j] || 0) + "</span>";
+      }).join("");
+      tip.querySelector("small").textContent = grp.title || grp.label;
+      const cx = pad.left + slot * i + slot / 2;
+      tip.style.left = Math.min(Math.max(cx, 100), width - 100) + "px";
+      tip.style.top = yAt(Math.max.apply(null, grp.values)) + "px";
+      tip.classList.add("is-visible");
+    }
+    function hide() { hover.setAttribute("opacity", "0"); tip.classList.remove("is-visible"); }
+    function at(clientX) {
+      const r = svg.getBoundingClientRect();
+      const x = (clientX - r.left) * (width / r.width) - pad.left;
+      return Math.min(n - 1, Math.max(0, Math.floor(x / slot)));
+    }
+    hit.addEventListener("pointermove", function (e) { show(at(e.clientX)); });
+    hit.addEventListener("pointerdown", function (e) { show(at(e.clientX)); });
+    hit.addEventListener("pointerleave", hide);
+    container.dataset.groups = String(n);
+  }
+
+  return { line: line, donut: donut, bars: bars, niceScale: niceScale };
 })();

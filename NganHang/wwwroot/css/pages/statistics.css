@@ -1,0 +1,98 @@
+/* =========================================================
+   TRANG THỐNG KÊ (Luân – tuần 3)
+   ========================================================= */
+.st-page { display: flex; flex-direction: column; gap: var(--gap); }
+
+/* ---------- BỘ LỌC ---------- */
+.st-filters { display: flex; flex-direction: column; gap: 16px; }
+.st-presets { border-bottom: 0; flex-wrap: wrap; gap: 8px; }
+.st-presets .tab {
+  border: 1px solid var(--border); border-radius: 20px; padding: 7px 16px; margin: 0;
+}
+.st-presets .tab.is-active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.st-presets .tab.is-active::after { display: none; }
+.st-filters__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 170px)) minmax(0, 170px) minmax(0, 1fr) auto;
+  gap: 16px; align-items: end;
+}
+.st-export { height: 46px; white-space: nowrap; }
+
+/* ---------- TỔNG QUAN ---------- */
+.st-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--gap); transition: opacity .2s; }
+.st-stats.is-loading { opacity: .55; }
+.st-stat {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; border: 1px solid var(--border-2); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow); padding: 16px 18px; min-width: 0;
+}
+.st-stat__ic {
+  width: 44px; height: 44px; border-radius: 12px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.st-stat--green .st-stat__ic { background: var(--green-soft); color: var(--green); }
+.st-stat--red .st-stat__ic { background: var(--red-soft); color: var(--red); }
+.st-stat--blue .st-stat__ic { background: var(--primary-soft); color: var(--primary); }
+.st-stat--purple .st-stat__ic { background: var(--purple-soft); color: var(--purple); }
+.st-stat__label { font-size: 13.5px; color: var(--muted); }
+.st-stat__value { font-size: clamp(18px, 1.6vw, 22px); font-weight: 800; color: var(--navy); letter-spacing: -0.01em; line-height: 1.25; white-space: nowrap; }
+.st-stat__value.money-in { color: var(--green); }
+.st-stat__value.money-out { color: var(--red); }
+.st-stat__sub { font-size: 12.5px; color: var(--muted); }
+
+/* ---------- BIỂU ĐỒ ---------- */
+.st-range { font-size: 14px; color: var(--muted); }
+.st-chart { min-height: 260px; }
+.st-legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; font-size: 13px; color: var(--text-2); margin-top: 8px; }
+.st-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.st-legend i { width: 10px; height: 10px; border-radius: 3px; }
+.chart__tooltip--wide .chart__row { display: flex; align-items: center; gap: 6px; }
+.chart__tooltip--wide .chart__row i { width: 8px; height: 8px; border-radius: 2px; }
+.chart-grow { animation: chart-grow .6s ease-out both; transform-origin: bottom; transform-box: fill-box; }
+@keyframes chart-grow { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* ---------- BẢNG ---------- */
+.st-bottom { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--gap); align-items: start; }
+.st-check .badge { display: inline-flex; align-items: center; gap: 6px; }
+.st-table td, .st-table th { white-space: nowrap; }
+.st-table tfoot th, .st-table tfoot td { border-top: 2px solid var(--border); font-weight: 700; background: #F8FAFD; }
+.st-dates { color: var(--muted); font-size: 13.5px; }
+.st-zero { color: var(--muted); font-weight: 400; }
+.st-interest { color: var(--purple); }
+.st-page .table-wrap > .st-table { min-width: 860px; }
+
+/* ---------- THEO LOẠI ---------- */
+.st-types__list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.st-type { display: flex; gap: 12px; align-items: flex-start; }
+.st-type__ic {
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.st-type--in .st-type__ic { background: var(--green-soft); color: var(--green); }
+.st-type--out .st-type__ic { background: var(--red-soft); color: var(--red); }
+.st-type--interest .st-type__ic { background: var(--purple-soft); color: var(--purple); }
+.st-type--failed .st-type__ic { background: #F1F3F7; color: var(--muted); }
+.st-type__main { flex: 1; min-width: 0; }
+.st-type__row { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.st-type__row small { color: var(--muted); }
+.st-type__row strong { white-space: nowrap; }
+.st-type__bar { height: 6px; border-radius: 4px; background: #EEF2F8; overflow: hidden; margin-top: 6px; }
+.st-type__bar span { display: block; height: 100%; border-radius: 4px; transition: width .5s ease; }
+.st-type--in .st-type__bar span { background: var(--green); }
+.st-type--out .st-type__bar span { background: var(--red); }
+.st-type--interest .st-type__bar span { background: var(--purple); }
+.st-type__main > small { font-size: 12.5px; color: var(--muted); }
+.st-type__link { font-size: 13px; color: var(--primary); font-weight: 600; }
+
+@media (max-width: 1560px) {
+  .st-bottom { grid-template-columns: 1fr; }
+  .st-types__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 28px; }
+}
+@media (max-width: 1100px) {
+  .st-filters__row { grid-template-columns: 1fr 1fr; }
+  .st-export { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 480px) {
+  .st-filters__row { grid-template-columns: 1fr; }
+  .st-export { width: 100%; justify-self: stretch; }
+}

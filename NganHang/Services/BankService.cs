@@ -129,6 +129,151 @@ public class BankService
     }
 
     // ============================================================
+    //  THỐNG KÊ THEO KỲ (Luân – tuần 3)
+    // ============================================================
+
+    /// <summary>Số ngày tối đa của một lần thống kê (khoảng 3 năm).</summary>
+    public const int MaxStatisticsDays = 1100;
+
+    /// <summary>Thống kê theo ngày chỉ cho khoảng ngắn để bảng không quá dài.</summary>
+    public const int MaxDailyStatisticsDays = 92;
+
+    /// <summary>
+    /// Thống kê giao dịch trong [from, to] (tính theo ngày, gồm cả 2 đầu mút).
+    /// groupBy: "month" | "quarter" | "day". accountId = null nghĩa là tất cả tài khoản.
+    /// Với mỗi kỳ và mỗi tài khoản: số dư đầu kỳ, tiền vào, tiền ra, tiền lãi, số dư cuối kỳ.
+    /// Tiền vào/ra chỉ tính giao dịch thành công nên luôn có: cuối kỳ = đầu kỳ + vào - ra.
+    /// Lưu ý: khi xem "tất cả tài khoản", chuyển nội bộ được tính 1 lần tiền ra (TK nguồn) và 1 lần tiền vào (TK nhận).
+    /// </summary>
+    public ServiceResult<StatisticsDto> GetStatistics(DateTime from, DateTime to, string groupBy, string? accountId)
+    {
+        groupBy = (groupBy ?? "").Trim().ToLowerInvariant();
+        if (groupBy != "month" && groupBy != "quarter" && groupBy != "day")
+            return ServiceResult<StatisticsDto>.Fail("Kiểu thống kê không hợp lệ (chọn theo tháng, quý hoặc ngày).");
+        if (from.Year < 2000 || to.Year < 2000)
+            return ServiceResult<StatisticsDto>.Fail("Vui lòng chọn khoảng thời gian hợp lệ.");
+        from = from.Date;
+        to = to.Date;
+        var today = DateTime.Today;
+        if (from > to) return ServiceResult<StatisticsDto>.Fail("Từ ngày phải trước hoặc bằng đến ngày.");
+        if (from > today) return ServiceResult<StatisticsDto>.Fail("Từ ngày không được sau hôm nay.");
+        if (to > today) to = today;   // chưa có giao dịch trong tương lai
+        var days = (to - from).Days + 1;
+        if (days > MaxStatisticsDays) return ServiceResult<StatisticsDto>.Fail("Chỉ thống kê tối đa 3 năm mỗi lần.");
+        if (groupBy == "day" && days > MaxDailyStatisticsDays)
+            return ServiceResult<StatisticsDto>.Fail("Thống kê theo ngày tối đa " + MaxDailyStatisticsDays + " ngày. Hãy chọn theo tháng hoặc quý.");
+        if (string.IsNullOrWhiteSpace(accountId)) accountId = null;
+
+        return _repo.Read(d =>
+        {
+            List<Account> accounts;
+            if (accountId != null)
+            {
+                var acc = d.Accounts.FirstOrDefault(a => a.Id == accountId);
+                if (acc == null) return ServiceResult<StatisticsDto>.Missing("Không tìm thấy tài khoản.");
+                accounts = new List<Account> { acc };
+            }
+            else
+            {
+                accounts = d.Accounts.ToList();
+            }
+            var ids = accounts.Select(a => a.Id).ToHashSet();
+
+            // Toàn bộ giao dịch của các tài khoản được chọn trong khoảng thời gian
+            var start = from;
+            var end = EndOfDay(to);
+            var inRange = d.Transactions
+                .Where(t => ids.Contains(t.AccountId) && t.Date >= start && t.Date <= end)
+                .ToList();
+            var ok = inRange.Where(t => t.Status == "success").ToList();
+
+            // Theo loại giao dịch (đủ mọi loại, kể cả loại chưa phát sinh = 0)
+            var byType = TransactionTypes.All.ToDictionary(
+                type => type,
+                type => new TypeStatDto(ok.Count(t => t.Type == type), ok.Where(t => t.Type == type).Sum(t => t.Amount)));
+
+            long totalIn = ok.Where(t => TransactionTypes.IsIncoming(t.Type)).Sum(t => t.Amount);
+            long totalOut = ok.Where(t => !TransactionTypes.IsIncoming(t.Type)).Sum(t => t.Amount);
+            var opening = BalanceAt(d, ids, start.AddTicks(-1));
+            var closing = BalanceAt(d, ids, end);
+            var summary = new StatisticsSummaryDto(opening, closing, totalIn, totalOut, totalIn - totalOut,
+                ok.Where(t => t.Type == "interest").Sum(t => t.Amount),
+                ok.Count, inRange.Count(t => t.Status == "failed"), byType);
+
+            // Theo từng kỳ
+            var periods = SplitPeriods(from, to, groupBy)
+                .Select(p => PeriodStat(d, ids, p.Label, p.Start, p.End))
+                .ToList();
+
+            // Theo từng tài khoản
+            var perAccount = accounts.Select(a =>
+            {
+                var one = new HashSet<string> { a.Id };
+                var mine = ok.Where(t => t.AccountId == a.Id).ToList();
+                return new AccountStatDto(a.Id, a.Name, a.AccountNumber, a.Type,
+                    BalanceAt(d, one, start.AddTicks(-1)), BalanceAt(d, one, end),
+                    mine.Where(t => TransactionTypes.IsIncoming(t.Type)).Sum(t => t.Amount),
+                    mine.Where(t => !TransactionTypes.IsIncoming(t.Type)).Sum(t => t.Amount),
+                    mine.Where(t => t.Type == "interest").Sum(t => t.Amount),
+                    mine.Count);
+            }).ToList();
+
+            return ServiceResult<StatisticsDto>.Success(
+                new StatisticsDto(from, to, groupBy, accountId, summary, periods, perAccount));
+        });
+    }
+
+    /// <summary>Chia [from, to] thành các kỳ tháng / quý / ngày; kỳ đầu và cuối được cắt theo from, to.</summary>
+    public static List<(string Label, DateTime Start, DateTime End)> SplitPeriods(DateTime from, DateTime to, string groupBy)
+    {
+        var list = new List<(string Label, DateTime Start, DateTime End)>();
+        from = from.Date;
+        to = to.Date;
+        var cursor = from;
+        var guard = 0;
+        while (cursor <= to && guard++ < 2000)
+        {
+            DateTime periodEnd;
+            string label;
+            if (groupBy == "day")
+            {
+                periodEnd = cursor;
+                label = cursor.ToString("dd/MM", CultureInfo.InvariantCulture);
+            }
+            else if (groupBy == "quarter")
+            {
+                var q = (cursor.Month - 1) / 3;                                // 0..3
+                var qStart = new DateTime(cursor.Year, q * 3 + 1, 1);
+                periodEnd = qStart.AddMonths(3).AddDays(-1);
+                label = "Q" + (q + 1) + "/" + cursor.Year;
+            }
+            else
+            {
+                periodEnd = new DateTime(cursor.Year, cursor.Month, DateTime.DaysInMonth(cursor.Year, cursor.Month));
+                label = "T" + cursor.Month + "/" + cursor.Year;
+            }
+            if (periodEnd > to) periodEnd = to;
+            list.Add((label, cursor, periodEnd));
+            cursor = periodEnd.AddDays(1);
+        }
+        return list;
+    }
+
+    private static PeriodStatDto PeriodStat(BankData d, HashSet<string> ids, string label, DateTime start, DateTime endDay)
+    {
+        var end = EndOfDay(endDay);
+        var ok = d.Transactions
+            .Where(t => ids.Contains(t.AccountId) && t.Status == "success" && t.Date >= start && t.Date <= end)
+            .ToList();
+        return new PeriodStatDto(label, start, endDay,
+            BalanceAt(d, ids, start.AddTicks(-1)), BalanceAt(d, ids, end),
+            ok.Where(t => TransactionTypes.IsIncoming(t.Type)).Sum(t => t.Amount),
+            ok.Where(t => !TransactionTypes.IsIncoming(t.Type)).Sum(t => t.Amount),
+            ok.Where(t => t.Type == "interest").Sum(t => t.Amount),
+            ok.Count);
+    }
+
+    // ============================================================
     //  GHI DỮ LIỆU
     // ============================================================
 

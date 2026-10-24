@@ -69,6 +69,61 @@ public record StateDto(
 /// <summary>Một điểm trên biểu đồ biến động số dư.</summary>
 public record BalancePointDto(DateTime Date, long Value, string Label);
 
+// ===================== THỐNG KÊ THEO KỲ =====================
+
+/// <summary>Số lượng và tổng tiền của một loại giao dịch trong kỳ.</summary>
+public record TypeStatDto(int Count, long Amount);
+
+/// <summary>
+/// Số liệu một kỳ (tháng / quý / ngày). Luôn đúng: ClosingBalance = OpeningBalance + TotalIn - TotalOut.
+/// Chỉ giao dịch THÀNH CÔNG mới được tính tiền; giao dịch thất bại chỉ được đếm.
+/// </summary>
+public record PeriodStatDto(
+    string Label,
+    DateTime Start,
+    DateTime End,
+    long OpeningBalance,
+    long ClosingBalance,
+    long TotalIn,
+    long TotalOut,
+    long Interest,
+    int Count);
+
+/// <summary>Số liệu của từng tài khoản trong cả khoảng thời gian.</summary>
+public record AccountStatDto(
+    string AccountId,
+    string Name,
+    string AccountNumber,
+    string Type,
+    long OpeningBalance,
+    long ClosingBalance,
+    long TotalIn,
+    long TotalOut,
+    long Interest,
+    int Count);
+
+/// <summary>Tổng hợp cả khoảng thời gian.</summary>
+public record StatisticsSummaryDto(
+    long OpeningBalance,
+    long ClosingBalance,
+    long TotalIn,
+    long TotalOut,
+    long Net,
+    long InterestReceived,
+    int TransactionCount,
+    int FailedCount,
+    Dictionary<string, TypeStatDto> ByType);
+
+/// <summary>Kết quả GET /api/statistics.</summary>
+public record StatisticsDto(
+    DateTime From,
+    DateTime To,
+    string GroupBy,
+    string? AccountId,
+    StatisticsSummaryDto Summary,
+    List<PeriodStatDto> Periods,
+    List<AccountStatDto> Accounts);
+
 public record DepositWithdrawResult(AccountDto Account, TransactionDto Transaction, bool UsesOverdraft);
 
 /// <summary>Kết quả chuyển tiền: tài khoản nguồn/đích sau khi chuyển và 2 giao dịch được tạo.</summary>
