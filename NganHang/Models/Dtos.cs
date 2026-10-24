@@ -37,8 +37,11 @@ public record InterestInfo(
     long ProjectedInterest,
     long TotalReceived);
 
-/// <summary>Kết quả một lần cộng lãi: các giao dịch "Cộng lãi" vừa tạo và tổng tiền lãi.</summary>
-public record InterestRunResult(List<TransactionDto> Transactions, long TotalAmount);
+/// <summary>
+/// Kết quả một lần cộng lãi: các giao dịch "Cộng lãi" vừa tạo và tổng tiền lãi.
+/// Error khác null nghĩa là đợt cộng lãi bị lỗi giữa chừng và đã được hoàn tác.
+/// </summary>
+public record InterestRunResult(List<TransactionDto> Transactions, long TotalAmount, string? Error = null);
 
 /// <summary>Giao dịch kèm số dư sau giao dịch (tính riêng cho từng tài khoản).</summary>
 public record TransactionDto(

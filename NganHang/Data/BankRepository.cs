@@ -13,6 +13,7 @@ public class BankRepository
     private readonly object _lock = new();
     private readonly string _filePath;
     private readonly ILogger<BankRepository> _logger;
+    private readonly IFaultInjector _faults;
     private BankData _data;
 
     private static readonly JsonSerializerOptions FileJson = new()
@@ -24,9 +25,11 @@ public class BankRepository
     };
 
     /// <param name="filePath">Đường dẫn file JSON. Web dùng App_Data/bank-data.json; unit test dùng file tạm riêng.</param>
-    public BankRepository(string filePath, ILogger<BankRepository> logger)
+    /// <param name="faults">Điểm cắm lỗi giả lập cho unit test; chạy thật để trống.</param>
+    public BankRepository(string filePath, ILogger<BankRepository> logger, IFaultInjector? faults = null)
     {
         _logger = logger;
+        _faults = faults ?? NoFaults.Instance;
         _filePath = Path.GetFullPath(filePath);
         var folder = Path.GetDirectoryName(_filePath);
         if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
@@ -95,6 +98,7 @@ public class BankRepository
         // Ghi ra file tạm rồi thay thế để không bị hỏng file nếu tắt ngang
         var tmp = _filePath + ".tmp";
         File.WriteAllText(tmp, JsonSerializer.Serialize(_data, FileJson));
+        _faults.Hit(FaultPoints.SaveFile);   // giả lập lỗi: đã ghi file tạm nhưng chưa kịp thay file chính
         File.Move(tmp, _filePath, overwrite: true);
     }
 }

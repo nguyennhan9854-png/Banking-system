@@ -6,10 +6,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Controller trả JSON dạng camelCase (accountNumber, balanceAfter...) để JavaScript dùng trực tiếp
 builder.Services.AddControllers();
 
+// Điểm cắm lỗi giả lập: chạy thật thì không gây lỗi (unit test mới thay bằng bản giả)
+builder.Services.AddSingleton<IFaultInjector>(NoFaults.Instance);
+
 // Kho dữ liệu (file JSON) và nghiệp vụ ngân hàng: dùng chung 1 bản cho toàn ứng dụng
 builder.Services.AddSingleton(sp => new BankRepository(
     Path.Combine(builder.Environment.ContentRootPath, "App_Data", "bank-data.json"),
-    sp.GetRequiredService<ILogger<BankRepository>>()));
+    sp.GetRequiredService<ILogger<BankRepository>>(),
+    sp.GetRequiredService<IFaultInjector>()));
 builder.Services.AddSingleton<BankService>();
 
 // Tự động cộng lãi tiết kiệm hằng tháng (chạy nền, kiểm tra mỗi giờ)

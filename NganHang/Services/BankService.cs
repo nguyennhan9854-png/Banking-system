@@ -25,10 +25,14 @@ public class BankService
     private static readonly long[] AllowedOverdraftLimits = { 0, 5_000_000, 10_000_000 };
 
     private readonly BankRepository _repo;
+    private readonly IFaultInjector _faults;
 
-    public BankService(BankRepository repo)
+    /// <param name="repo">Kho dữ liệu (file JSON).</param>
+    /// <param name="faults">Điểm cắm lỗi giả lập cho unit test rollback; chạy thật dùng NoFaults.</param>
+    public BankService(BankRepository repo, IFaultInjector? faults = null)
     {
         _repo = repo;
+        _faults = faults ?? NoFaults.Instance;
     }
 
     // ============================================================
@@ -126,6 +130,7 @@ public class BankService
             return (ServiceResult<DepositWithdrawResult>.Fail("Số tiền tối đa mỗi lần nạp là " + Vnd(MaxAmount) + "."), false);
 
         acc.Balance += amount;
+        _faults.Hit(FaultPoints.DepositAfterCredit);
         var tx = AddTransaction(d, acc, "deposit", amount, "Nạp tiền vào tài khoản", acc.Name);
         AddNotification(d, "Nạp " + Vnd(amount) + " vào " + acc.Name + " thành công");
         return (ServiceResult<DepositWithdrawResult>.Success(Result(d, acc, tx, false)), true);
@@ -146,6 +151,7 @@ public class BankService
 
         var usesOverdraft = acc.Type == "payment" && amount > acc.Balance;
         acc.Balance -= amount;
+        _faults.Hit(FaultPoints.WithdrawAfterDebit);
         var tx = AddTransaction(d, acc, "withdraw", amount, "Rút tiền từ tài khoản", acc.Name);
         AddNotification(d, "Rút " + Vnd(amount) + " từ " + acc.Name + " thành công");
         return (ServiceResult<DepositWithdrawResult>.Success(Result(d, acc, tx, usesOverdraft)), true);
@@ -234,6 +240,7 @@ public class BankService
         var outTx = AddTransaction(d, source, "transfer_out", amount,
             "Chuyển tiền đến " + recipientName,
             recipientBank + " · " + recipientNumber + " · " + note);
+        _faults.Hit(FaultPoints.TransferAfterDebit);
 
         Transaction? inTx = null;
         if (to != null)
@@ -243,6 +250,7 @@ public class BankService
                 "Nhận tiền từ " + source.Name,
                 BankName + " · " + source.AccountNumber + " · " + note);
         }
+        _faults.Hit(FaultPoints.TransferAfterCredit);
 
         AddNotification(d, "Chuyển " + Vnd(amount) + " từ " + source.Name + " đến " + recipientName + " thành công");
 
@@ -367,6 +375,7 @@ public class BankService
             LastInterestDate = type == "saving" ? DateTime.Today : null
         };
         d.Accounts.Add(acc);
+        _faults.Hit(FaultPoints.OpenAfterAdd);
 
         // Tiền nạp ban đầu được ghi thành một giao dịch để lịch sử số dư khớp
         if (amount > 0)
@@ -537,7 +546,7 @@ public class BankService
     /// Cộng lãi cho từng kỳ 1 tháng đã kết thúc trước hoặc đúng ngày <paramref name="now"/>.
     /// Trả về true nếu dữ liệu có thay đổi.
     /// </summary>
-    private static bool PostDuePeriods(BankData d, Account acc, DateTime now, List<Transaction> posted)
+    private bool PostDuePeriods(BankData d, Account acc, DateTime now, List<Transaction> posted)
     {
         var changed = false;
         var start = InterestStart(d, acc);
@@ -566,6 +575,7 @@ public class BankService
             acc.LastInterestDate = end;
             start = end;
             changed = true;
+            _faults.Hit(FaultPoints.InterestAfterPeriod);
         }
         return changed;
     }
