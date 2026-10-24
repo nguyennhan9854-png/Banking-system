@@ -86,19 +86,19 @@ public static class SeedData
             },
             Accounts = new List<Account>
             {
-                new()
+                new SavingAccount
                 {
-                    Id = "acc-saving", Type = "saving", Name = "Tài khoản tiết kiệm",
+                    Id = "acc-saving", Name = "Tài khoản tiết kiệm",
                     AccountNumber = "0123 4567 8888", Balance = 12_580_000, Status = "active",
                     OpenedDate = "2024-06-12", ProductName = "Tiết kiệm có kỳ hạn",
-                    InterestRate = 5.8, TermMonths = 6, OverdraftLimit = 0, Branch = "Chi nhánh Thủ Đức"
+                    InterestRate = 5.8, TermMonths = 6, Branch = "Chi nhánh Thủ Đức"
                 },
-                new()
+                new PaymentAccount
                 {
-                    Id = "acc-payment", Type = "payment", Name = "Tài khoản thanh toán",
+                    Id = "acc-payment", Name = "Tài khoản thanh toán",
                     AccountNumber = "0123 4567 9999", Balance = 3_250_000, Status = "active",
                     OpenedDate = "2024-06-11", ProductName = "Thanh toán",
-                    InterestRate = 0, TermMonths = 0, OverdraftLimit = 10_000_000, Branch = "Chi nhánh Thủ Đức"
+                    OverdraftLimit = 10_000_000, Branch = "Chi nhánh Thủ Đức"
                 }
             },
             Transactions = transactions,
@@ -111,7 +111,7 @@ public static class SeedData
         };
 
         // Kỳ tính lãi hiện tại của tài khoản tiết kiệm bắt đầu từ lần cộng lãi gần nhất trong dữ liệu mẫu
-        var saving = data.Accounts.First(a => a.Id == "acc-saving");
+        var saving = data.Accounts.OfType<SavingAccount>().First(a => a.Id == "acc-saving");
         saving.LastInterestDate = transactions
             .Where(t => t.AccountId == saving.Id && t.Type == "interest")
             .Max(t => t.Date).Date;

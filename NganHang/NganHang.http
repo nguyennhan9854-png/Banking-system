@@ -57,3 +57,21 @@ POST {{host}}/api/interest/run
 
 ### Nhận ngay tiền lãi tạm tính của tài khoản tiết kiệm
 POST {{host}}/api/interest/acc-saving/apply
+
+### Thống kê 6 tháng theo tháng, tất cả tài khoản (tuần 3)
+GET {{host}}/api/statistics?from=2026-05-01&to=2026-10-24&groupBy=month
+
+### Thống kê theo quý, chỉ tài khoản tiết kiệm
+GET {{host}}/api/statistics?from=2026-01-01&to=2026-10-24&groupBy=quarter&accountId=acc-saving
+
+### Khóa tài khoản thanh toán -> sau đó rút/chuyển sẽ bị chặn
+POST {{host}}/api/accounts/acc-payment/lock
+Content-Type: application/json
+
+{ "locked": true }
+
+### Mở khóa
+POST {{host}}/api/accounts/acc-payment/lock
+Content-Type: application/json
+
+{ "locked": false }

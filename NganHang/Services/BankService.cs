@@ -281,14 +281,14 @@ public class BankService
     {
         var acc = d.Accounts.FirstOrDefault(a => a.Id == accountId);
         if (acc == null) return (ServiceResult<DepositWithdrawResult>.Missing("Không tìm thấy tài khoản."), false);
-        if (acc.Status != "active") return (ServiceResult<DepositWithdrawResult>.Fail("Tài khoản đang bị khóa."), false);
+        if (!acc.IsActive) return (ServiceResult<DepositWithdrawResult>.Fail("Tài khoản đang bị khóa."), false);
         if (amount <= 0) return (ServiceResult<DepositWithdrawResult>.Fail("Vui lòng nhập số tiền lớn hơn 0."), false);
         if (amount > MaxAmount)
             return (ServiceResult<DepositWithdrawResult>.Fail("Số tiền tối đa mỗi lần nạp là " + Vnd(MaxAmount) + "."), false);
 
         op.Describe(acc.Id, "deposit", amount, "Nạp tiền vào tài khoản", acc.Name,
             "Nạp " + Vnd(amount) + " vào " + acc.Name + " thất bại – đã hoàn tác, số dư giữ nguyên");
-        acc.Balance += amount;
+        acc.Credit(amount);
         _faults.Hit(FaultPoints.DepositAfterCredit);
         var tx = AddTransaction(d, acc, "deposit", amount, "Nạp tiền vào tài khoản", acc.Name);
         AddNotification(d, "Nạp " + Vnd(amount) + " vào " + acc.Name + " thành công");
@@ -299,20 +299,20 @@ public class BankService
     {
         var acc = d.Accounts.FirstOrDefault(a => a.Id == accountId);
         if (acc == null) return (ServiceResult<DepositWithdrawResult>.Missing("Không tìm thấy tài khoản."), false);
-        if (acc.Status != "active") return (ServiceResult<DepositWithdrawResult>.Fail("Tài khoản đang bị khóa."), false);
+        if (!acc.IsActive) return (ServiceResult<DepositWithdrawResult>.Fail("Tài khoản đang bị khóa."), false);
         if (amount <= 0) return (ServiceResult<DepositWithdrawResult>.Fail("Vui lòng nhập số tiền lớn hơn 0."), false);
         if (amount > MaxAmount)
             return (ServiceResult<DepositWithdrawResult>.Fail("Số tiền tối đa mỗi lần rút là " + Vnd(MaxAmount) + "."), false);
 
         // Thanh toán: được dùng thấu chi -> khả dụng = số dư + hạn mức.
         // Tiết kiệm: không được rút quá số dư.
-        var spendError = CheckSpend(acc, amount, "rút");
+        var spendError = acc.CheckSpend(amount, "rút");   // đa hình: tiết kiệm / thanh toán tự kiểm tra
         if (spendError != null) return (ServiceResult<DepositWithdrawResult>.Fail(spendError), false);
 
-        var usesOverdraft = acc.Type == "payment" && amount > acc.Balance;
+        var usesOverdraft = acc.UsesOverdraft(amount);
         op.Describe(acc.Id, "withdraw", amount, "Rút tiền từ tài khoản", acc.Name,
             "Rút " + Vnd(amount) + " từ " + acc.Name + " thất bại – đã hoàn tác, số dư giữ nguyên");
-        acc.Balance -= amount;
+        acc.Debit(amount);
         _faults.Hit(FaultPoints.WithdrawAfterDebit);
         var tx = AddTransaction(d, acc, "withdraw", amount, "Rút tiền từ tài khoản", acc.Name);
         AddNotification(d, "Rút " + Vnd(amount) + " từ " + acc.Name + " thành công");
@@ -336,7 +336,7 @@ public class BankService
         // 1. Tài khoản nguồn
         var source = d.Accounts.FirstOrDefault(a => a.Id == req.FromAccountId);
         if (source == null) return (ServiceResult<TransferResult>.Missing("Không tìm thấy tài khoản nguồn."), false);
-        if (source.Status != "active") return (ServiceResult<TransferResult>.Fail("Tài khoản nguồn đang bị khóa."), false);
+        if (!source.IsActive) return (ServiceResult<TransferResult>.Fail("Tài khoản nguồn đang bị khóa."), false);
 
         // 2. Số tiền
         var amount = req.Amount;
@@ -385,7 +385,7 @@ public class BankService
         }
         if (to != null && to.Id == source.Id)
             return (ServiceResult<TransferResult>.Fail("Không thể chuyển tiền vào chính tài khoản nguồn."), false);
-        if (to != null && to.Status != "active")
+        if (to != null && !to.IsActive)
             return (ServiceResult<TransferResult>.Fail("Tài khoản nhận đang bị khóa."), false);
 
         // 4. Nội dung chuyển khoản
@@ -395,22 +395,22 @@ public class BankService
         if (note.Length == 0) note = d.User.Name + " chuyển tiền";
 
         // 5. Kiểm tra số dư / hạn mức thấu chi
-        var spendError = CheckSpend(source, amount, "chuyển");
+        var spendError = source.CheckSpend(amount, "chuyển");
         if (spendError != null) return (ServiceResult<TransferResult>.Fail(spendError), false);
 
         // 6. Ghi nhận: trừ nguồn, cộng đích (nếu nội bộ), lưu 2 giao dịch
-        var usesOverdraft = source.Type == "payment" && amount > source.Balance;
+        var usesOverdraft = source.UsesOverdraft(amount);
         var outSubtitle = recipientBank + " · " + recipientNumber + " · " + note;
         op.Describe(source.Id, "transfer_out", amount, "Chuyển tiền đến " + recipientName, outSubtitle,
             "Chuyển " + Vnd(amount) + " đến " + recipientName + " thất bại – đã hoàn tác, số dư giữ nguyên");
-        source.Balance -= amount;
+        source.Debit(amount);
         var outTx = AddTransaction(d, source, "transfer_out", amount, "Chuyển tiền đến " + recipientName, outSubtitle);
         _faults.Hit(FaultPoints.TransferAfterDebit);
 
         Transaction? inTx = null;
         if (to != null)
         {
-            to.Balance += amount;
+            to.Credit(amount);
             inTx = AddTransaction(d, to, "transfer_in", amount,
                 "Nhận tiền từ " + source.Name,
                 BankName + " · " + source.AccountNumber + " · " + note);
@@ -450,7 +450,7 @@ public class BankService
                 var now = asOf ?? DateTime.Now;
                 var posted = new List<Transaction>();
                 var changed = false;
-                foreach (var acc in d.Accounts.Where(EarnsInterest).ToList())
+                foreach (var acc in d.Accounts.OfType<SavingAccount>().Where(a => a.EarnsInterest).ToList())
                 {
                     changed |= PostDuePeriods(d, acc, now, posted);
                 }
@@ -472,9 +472,9 @@ public class BankService
     public ServiceResult<InterestRunResult> ApplyAccruedInterest(string accountId, DateTime? asOf = null) => Atomic<InterestRunResult>((d, _) =>
     {
         var now = asOf ?? DateTime.Now;
-        var acc = d.Accounts.FirstOrDefault(a => a.Id == accountId);
-        if (acc == null) return (ServiceResult<InterestRunResult>.Missing("Không tìm thấy tài khoản."), false);
-        if (!EarnsInterest(acc))
+        var found = d.Accounts.FirstOrDefault(a => a.Id == accountId);
+        if (found == null) return (ServiceResult<InterestRunResult>.Missing("Không tìm thấy tài khoản."), false);
+        if (found is not SavingAccount acc || !acc.EarnsInterest)
             return (ServiceResult<InterestRunResult>.Fail("Chỉ tài khoản tiết kiệm đang hoạt động mới được cộng lãi."), false);
 
         var posted = new List<Transaction>();
@@ -484,7 +484,7 @@ public class BankService
         var accrued = AccrueInterest(d, acc, start, now.Date);
         if (accrued > 0)
         {
-            acc.Balance += accrued;
+            acc.Credit(accrued);
             var tx = AddTransaction(d, acc, "interest", accrued, "Cộng lãi (nhận sớm)",
                 acc.Name + " · " + start.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) + " – " +
                 now.Date.AddDays(-1).ToString("dd/MM/yyyy", CultureInfo.InvariantCulture));
@@ -535,29 +535,24 @@ public class BankService
 
         var baseName = type == "saving" ? "Tài khoản tiết kiệm" : "Tài khoản thanh toán";
         var sameType = d.Accounts.Count(a => a.Type == type);
-        var acc = new Account
-        {
-            Id = "acc-" + Guid.NewGuid().ToString("N")[..10],
-            Type = type,
-            Name = sameType > 0 ? baseName + " " + (sameType + 1) : baseName,
-            AccountNumber = NewAccountNumber(d),
-            Balance = 0,
-            Status = "active",
-            OpenedDate = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            ProductName = type == "saving" ? "Tiết kiệm có kỳ hạn" : "Thanh toán",
-            InterestRate = rate,
-            TermMonths = term,
-            OverdraftLimit = limit,
-            Branch = "Chi nhánh Thủ Đức",
-            LastInterestDate = type == "saving" ? DateTime.Today : null
-        };
+        // Tạo đúng lớp con: tiết kiệm có lãi suất/kỳ hạn, thanh toán có hạn mức thấu chi
+        Account acc = type == "saving"
+            ? new SavingAccount { InterestRate = rate, TermMonths = term, LastInterestDate = DateTime.Today }
+            : new PaymentAccount { OverdraftLimit = limit };
+        acc.Id = "acc-" + Guid.NewGuid().ToString("N")[..10];
+        acc.Name = sameType > 0 ? baseName + " " + (sameType + 1) : baseName;
+        acc.AccountNumber = NewAccountNumber(d);
+        acc.Status = "active";
+        acc.OpenedDate = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        acc.ProductName = type == "saving" ? "Tiết kiệm có kỳ hạn" : "Thanh toán";
+        acc.Branch = "Chi nhánh Thủ Đức";
         d.Accounts.Add(acc);
         _faults.Hit(FaultPoints.OpenAfterAdd);
 
         // Tiền nạp ban đầu được ghi thành một giao dịch để lịch sử số dư khớp
         if (amount > 0)
         {
-            acc.Balance = amount;
+            acc.Credit(amount);
             AddTransaction(d, acc, "open", amount, "Nạp tiền khi mở tài khoản", acc.Name);
         }
         AddNotification(d, "Mở " + acc.Name + " thành công – STK " + acc.AccountNumber);
@@ -685,22 +680,6 @@ public class BankService
         return TransactionTypes.IsIncoming(t.Type) ? t.Amount : -t.Amount;
     }
 
-    private static long Available(Account acc) =>
-        acc.Type == "payment" ? acc.Balance + acc.OverdraftLimit : Math.Max(acc.Balance, 0);
-
-    /// <summary>
-    /// Kiểm tra có được trừ <paramref name="amount"/> khỏi tài khoản không (dùng cho rút và chuyển tiền).
-    /// Trả về null nếu hợp lệ, ngược lại trả về thông báo lỗi.
-    /// </summary>
-    private static string? CheckSpend(Account acc, long amount, string verb)
-    {
-        var available = Available(acc);
-        if (amount <= available) return null;
-        return acc.Type == "payment"
-            ? "Số tiền " + verb + " vượt quá hạn mức khả dụng."
-            : "Số dư không đủ. Số tiền " + verb + " tối đa là " + Vnd(available) + ".";
-    }
-
     private static string OnlyDigits(string? s) =>
         new string((s ?? "").Where(char.IsDigit).ToArray());
 
@@ -752,9 +731,9 @@ public class BankService
     /// Kỳ hạn hiện tại của sổ tiết kiệm (tự tái tục khi đến hạn) và tiền lãi dự kiến:
     /// lãi = số dư × (lãi suất / 100) × số ngày / 365
     /// </summary>
-    public static TermInfo? SavingTerm(Account acc)
+    public static TermInfo? SavingTerm(Account account)
     {
-        if (acc.Type != "saving" || acc.TermMonths <= 0) return null;
+        if (account is not SavingAccount acc || acc.TermMonths <= 0) return null;
         if (!DateTime.TryParseExact(acc.OpenedDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start))
             return null;
         var today = DateTime.Today;
@@ -772,11 +751,8 @@ public class BankService
         return new TermInfo(start, maturity, days, interest);
     }
 
-    private static bool EarnsInterest(Account a) =>
-        a.Type == "saving" && a.Status == "active" && a.InterestRate > 0;
-
     /// <summary>Ngày bắt đầu kỳ tính lãi hiện tại.</summary>
-    private static DateTime InterestStart(BankData d, Account acc)
+    private static DateTime InterestStart(BankData d, SavingAccount acc)
     {
         if (acc.LastInterestDate.HasValue) return acc.LastInterestDate.Value.Date;
         var lastInterest = d.Transactions
@@ -793,7 +769,7 @@ public class BankService
     /// Tiền lãi phát sinh trong các ngày [from, to): cộng lãi của từng ngày theo số dư cuối ngày đó.
     /// Số dư âm hoặc bằng 0 thì ngày đó không có lãi.
     /// </summary>
-    private static long AccrueInterest(BankData d, Account acc, DateTime from, DateTime to)
+    private static long AccrueInterest(BankData d, SavingAccount acc, DateTime from, DateTime to)
     {
         decimal total = 0;
         var ids = new[] { acc.Id };
@@ -810,7 +786,7 @@ public class BankService
     /// Cộng lãi cho từng kỳ 1 tháng đã kết thúc trước hoặc đúng ngày <paramref name="now"/>.
     /// Trả về true nếu dữ liệu có thay đổi.
     /// </summary>
-    private bool PostDuePeriods(BankData d, Account acc, DateTime now, List<Transaction> posted)
+    private bool PostDuePeriods(BankData d, SavingAccount acc, DateTime now, List<Transaction> posted)
     {
         var changed = false;
         var start = InterestStart(d, acc);
@@ -827,7 +803,7 @@ public class BankService
             var amount = AccrueInterest(d, acc, start, end);
             if (amount > 0)
             {
-                acc.Balance += amount;
+                acc.Credit(amount);
                 var tx = AddTransaction(d, acc, "interest", amount, "Cộng lãi định kỳ",
                     acc.Name + " · " + start.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) + " – " +
                     end.AddDays(-1).ToString("dd/MM/yyyy", CultureInfo.InvariantCulture));
@@ -845,9 +821,9 @@ public class BankService
     }
 
     /// <summary>Thông tin kỳ lãi hiện tại để hiển thị (null nếu tài khoản không hưởng lãi).</summary>
-    private static InterestInfo? InterestOf(BankData d, Account acc, DateTime now)
+    private static InterestInfo? InterestOf(BankData d, Account account, DateTime now)
     {
-        if (!EarnsInterest(acc)) return null;
+        if (account is not SavingAccount acc || !acc.EarnsInterest) return null;
         var start = InterestStart(d, acc);
         var next = start.AddMonths(1);
         var today = now.Date;
@@ -872,8 +848,11 @@ public class BankService
 
     private static AccountDto ToDto(BankData d, Account a, DateTime now) => new(
         a.Id, a.Type, a.Name, a.AccountNumber, a.Balance, a.Status, a.OpenedDate, a.ProductName,
-        a.InterestRate, a.TermMonths, a.OverdraftLimit, a.Branch,
-        Available(a), Growth(d, a, now), SavingTerm(a), InterestOf(d, a, now));
+        (a as SavingAccount)?.InterestRate ?? 0,
+        (a as SavingAccount)?.TermMonths ?? 0,
+        (a as PaymentAccount)?.OverdraftLimit ?? 0,
+        a.Branch,
+        a.AvailableBalance, Growth(d, a, now), SavingTerm(a), InterestOf(d, a, now));
 
     private static DepositWithdrawResult Result(BankData d, Account acc, Transaction tx, bool usesOverdraft)
     {
@@ -930,6 +909,5 @@ public class BankService
     private static DateTime EndOfDay(DateTime day) => day.Date.AddDays(1).AddTicks(-1);
 
     /// <summary>12580000 → "12.580.000 đ"</summary>
-    public static string Vnd(long value) =>
-        (value < 0 ? "-" : "") + Math.Abs(value).ToString("N0", CultureInfo.InvariantCulture).Replace(",", ".") + " đ";
+    public static string Vnd(long value) => Account.Vnd(value);
 }

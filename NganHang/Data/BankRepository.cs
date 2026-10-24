@@ -21,7 +21,9 @@ public class BankRepository
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         // Giữ nguyên chữ tiếng Việt trong file cho dễ đọc
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        // Tạo đúng lớp con SavingAccount / PaymentAccount theo trường "type"
+        Converters = { new AccountJsonConverter() }
     };
 
     /// <param name="filePath">Đường dẫn file JSON. Web dùng App_Data/bank-data.json; unit test dùng file tạm riêng.</param>

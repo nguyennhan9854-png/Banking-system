@@ -1,32 +1,5 @@
 namespace NganHang.Models;
 
-/// <summary>Tài khoản ngân hàng (tiết kiệm hoặc thanh toán). Tiền lưu bằng long (đơn vị: đồng).</summary>
-public class Account
-{
-    public string Id { get; set; } = "";
-    /// <summary>"saving" = tiết kiệm, "payment" = thanh toán</summary>
-    public string Type { get; set; } = "saving";
-    public string Name { get; set; } = "";
-    public string AccountNumber { get; set; } = "";
-    public long Balance { get; set; }
-    public string Status { get; set; } = "active";
-    /// <summary>Ngày mở dạng yyyy-MM-dd</summary>
-    public string OpenedDate { get; set; } = "";
-    public string ProductName { get; set; } = "";
-    /// <summary>Lãi suất %/năm (chỉ tài khoản tiết kiệm)</summary>
-    public double InterestRate { get; set; }
-    /// <summary>Kỳ hạn (tháng) – chỉ tài khoản tiết kiệm</summary>
-    public int TermMonths { get; set; }
-    /// <summary>Hạn mức thấu chi – chỉ tài khoản thanh toán</summary>
-    public long OverdraftLimit { get; set; }
-    public string Branch { get; set; } = "";
-    /// <summary>
-    /// Ngày bắt đầu kỳ tính lãi hiện tại (= ngày cộng lãi gần nhất). Chỉ dùng cho tài khoản tiết kiệm.
-    /// Để trống thì hệ thống tự suy ra từ giao dịch cộng lãi gần nhất hoặc ngày mở tài khoản.
-    /// </summary>
-    public DateTime? LastInterestDate { get; set; }
-}
-
 /// <summary>Một giao dịch. Số dư sau giao dịch KHÔNG lưu mà được tính lại khi đọc.</summary>
 public class Transaction
 {

@@ -1,7 +1,8 @@
 # Hệ thống Ngân hàng
 
 Website ngân hàng: **backend C# ASP.NET Core Web API** (.NET 8), giao diện HTML/CSS/JavaScript.
-Đã có các trang **Trang chủ**, **Tài khoản của tôi**, **Chuyển tiền**, **Cộng lãi** và **Giao dịch** (bản cơ bản).
+Đã có các trang **Trang chủ**, **Tài khoản của tôi**, **Giao dịch**, **Chuyển tiền**, **Cộng lãi** và **Thống kê**.
+Mọi thao tác ghi đều **tất cả hoặc không gì cả** (rollback khi lỗi giữa chừng).
 
 ## Cách chạy
 
@@ -22,10 +23,12 @@ Lần chạy đầu, server tự tạo dữ liệu mẫu ở `NganHang/App_Data/
 NganHang/
 ├── Program.cs                     cấu hình server, phục vụ wwwroot + API
 ├── Models/
-│   ├── Entities.cs                Account, Transaction, Notification, UserProfile
+│   ├── Accounts.cs                Account (lớp cha) → SavingAccount, PaymentAccount (kế thừa, đa hình)
+│   ├── Entities.cs                Transaction, Notification, UserProfile, BankData
 │   └── Dtos.cs                    dữ liệu gửi/nhận qua API
 ├── Data/
-│   ├── BankRepository.cs          đọc/ghi file JSON (có lock)
+│   ├── BankRepository.cs          đọc/ghi file JSON (có lock, chụp + khôi phục khi lỗi = rollback)
+│   ├── FaultInjection.cs          điểm cắm lỗi giả lập cho test rollback
 │   └── SeedData.cs                dữ liệu mẫu
 ├── Services/
 │   └── BankService.cs             TOÀN BỘ NGHIỆP VỤ
@@ -48,13 +51,16 @@ NganHang/
 | POST | `/api/transfers` | Chuyển tiền (nội bộ: `toAccountId`; ra ngoài: `toAccountNumber`, `toName`, `toBank`) |
 | POST | `/api/interest/run` | Chạy ngay đợt cộng lãi tự động (chỉ cộng kỳ đã đến hạn) |
 | POST | `/api/interest/{accountId}/apply` | Nhận ngay tiền lãi tạm tính của tài khoản tiết kiệm |
+| POST | `/api/accounts/{id}/lock` | Khóa / mở khóa tài khoản `{ "locked": true }` |
+| GET | `/api/statistics?from=&to=&groupBy=&accountId=` | Thống kê theo kỳ (`month`/`quarter`/`day`): đầu kỳ, vào, ra, lãi, cuối kỳ |
 | GET | `/api/transactions?accountId=&limit=` | Lịch sử giao dịch (có số dư sau GD) |
 | GET | `/api/balance-history?accountIds=&from=&to=&mode=` | Dữ liệu biểu đồ (`monthly`/`weekly`/`daily`) |
 | POST | `/api/notifications/{id}/read` | Đánh dấu đã đọc |
 | PUT | `/api/user/otp` | Bật/tắt OTP |
 | POST | `/api/system/reset` | Khôi phục dữ liệu mẫu |
 
-Lỗi nghiệp vụ trả về mã `400` kèm `{ "error": "thông báo tiếng Việt" }`; không tìm thấy trả `404`.
+Lỗi nghiệp vụ trả về mã `400` kèm `{ "error": "thông báo tiếng Việt" }`; không tìm thấy trả `404`;
+lỗi hệ thống giữa chừng (đã hoàn tác, có ghi giao dịch "Thất bại") trả `409`.
 
 ## Chạy unit test
 
@@ -70,6 +76,13 @@ Các test nằm trong thư mục `NganHang.Tests/` (xUnit). Mỗi test dùng m�
 | `WithdrawTests.cs` | Rút tiền: số dư âm, hạn mức thấu chi, số tiền không hợp lệ |
 | `TransferTests.cs` | Chuyển tiền: nội bộ, ra ngoài, chuyển vượt hạn mức, số dư âm, lịch sử giao dịch, lưu file |
 | `InterestTests.cs` | Cộng lãi: đúng công thức, theo lãi suất kỳ hạn, tự động theo tháng, không cộng trùng, lãi kép nhiều kỳ, số dư 0, tài khoản thanh toán không có lãi |
+| `RollbackTests.cs` | Tuần 3 – rollback: lỗi sau khi trừ nguồn/chưa cộng đích, lỗi ghi file, lỗi giữa đợt cộng lãi, giao dịch "failed", chạy song song có lỗi |
+| `EdgeCaseTests.cs` | Tuần 3 – biên: số tiền nhỏ nhất/lớn nhất, nhiều lệnh cùng lúc, tài khoản bị khóa, STK có ký tự lạ, file dữ liệu hỏng |
+| `StatisticsTests.cs` | Tuần 3 – thống kê: cuối kỳ = đầu kỳ + vào − ra, lãi từng kỳ khớp lịch sử, chia kỳ tháng/quý/ngày |
+| `AccountModelTests.cs` | Tuần 3 – OOP: kế thừa, đa hình, đóng gói số dư, đọc/ghi JSON đúng lớp con |
+| `InterestEdgeTests.cs` | Tuần 3 – biên cộng lãi: tháng 28/29/30/31 ngày, năm nhuận, mở sổ ngày 31, số dư về 0 giữa kỳ, tắt server cả năm |
+
+Giải thích các nguyên lý hướng đối tượng kèm link code: [`docs/Self-Explanation-OOP.md`](docs/Self-Explanation-OOP.md).
 
 ## Quy tắc nghiệp vụ (trong `BankService.cs`)
 
@@ -83,6 +96,10 @@ Các test nằm trong thư mục `NganHang.Tests/` (xUnit). Mỗi test dùng m�
 - **Cộng lãi tiết kiệm:** lãi mỗi ngày = số dư cuối ngày × lãi suất / 100 / 365; đủ 1 tháng kể từ lần cộng trước thì **tự động cộng** (dịch vụ chạy nền `InterestBackgroundService` kiểm tra khi khởi động và mỗi giờ); mỗi kỳ chỉ cộng một lần; số dư âm/0 không có lãi; tài khoản thanh toán không có lãi.
 - **Chuyển tiền:** tối thiểu 10.000 đ; dùng chung quy tắc số dư/thấu chi với rút tiền; không chuyển vào chính tài khoản nguồn; nhập STK trùng tài khoản của mình thì tự xử lý như chuyển nội bộ; chuyển nội bộ tạo 2 giao dịch (chuyển đi + nhận tiền).
 - **Kiểm tra hai lớp:** server luôn kiểm tra lại, kể cả khi giao diện đã kiểm tra.
+- **Rollback:** trước mỗi thao tác ghi, `BankRepository` chụp lại dữ liệu; lỗi ở bất kỳ bước nào (kể cả lỗi ghi file) thì khôi phục bản chụp, file chính không bị ghi dở. `BankService` ghi thêm 1 giao dịch trạng thái `failed` (không làm đổi số dư) và 1 thông báo "thất bại – đã hoàn tác".
+- **Tài khoản bị khóa:** không nạp, rút, chuyển hay nhận tiền.
+- **File dữ liệu hỏng khi khởi động:** đổi tên thành `bank-data.json.corrupt-...` để giữ lại, rồi tạo dữ liệu mẫu mới.
+- **Thống kê:** chỉ giao dịch thành công mới tính tiền; khi xem tất cả tài khoản, chuyển nội bộ được tính cả vào (TK nhận) lẫn ra (TK nguồn).
 
 ## Nhật ký chỉnh sửa
 
@@ -97,3 +114,7 @@ Các test nằm trong thư mục `NganHang.Tests/` (xUnit). Mỗi test dùng m�
 | Tuần 2 | Cộng lãi tự động | `Services/BankService.cs`, `Services/InterestBackgroundService.cs`, `Controllers/InterestController.cs`, `Models/Entities.cs` |
 | Tuần 2 | Trang Cộng lãi, chi tiết lãi trong Tài khoản của tôi | `wwwroot/cong-lai.html`, `wwwroot/js/pages/interest.js`, `wwwroot/css/pages/interest.css`, `wwwroot/js/pages/accounts.js` |
 | Tuần 2 | Unit test cộng lãi | `NganHang.Tests/InterestTests.cs` |
+| Tuần 3 | Nhân – kịch bản test rollback (viết trước code) | `NganHang.Tests/RollbackTests.cs`, `NganHang.Tests/TestBank.cs`, `Data/FaultInjection.cs` |
+| Tuần 3 | Nhân – rollback, giao dịch thất bại, khóa tài khoản, sao lưu file hỏng, test biên | `Data/BankRepository.cs`, `Services/BankService.cs`, `wwwroot/js/pages/transactions.js`, `NganHang.Tests/EdgeCaseTests.cs` |
+| Tuần 3 | Luân – thống kê theo kỳ + trang Thống kê | `Services/BankService.cs`, `Controllers/StatisticsController.cs`, `wwwroot/thong-ke.html`, `wwwroot/js/pages/statistics.js`, `NganHang.Tests/StatisticsTests.cs` |
+| Tuần 3 | Luân – kế thừa / đa hình tài khoản, test biên cộng lãi, Self-Explanation | `Models/Accounts.cs`, `NganHang.Tests/AccountModelTests.cs`, `NganHang.Tests/InterestEdgeTests.cs`, `docs/Self-Explanation-OOP.md` |
