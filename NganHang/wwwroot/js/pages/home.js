@@ -91,7 +91,7 @@ App.boot(function () {
       '<th scope="col" class="t-right">Số tiền</th><th scope="col" class="t-center">Trạng thái</th></tr></thead><tbody>' +
       list.map(function (tx) {
         const isIn = S.TX_TYPES[tx.type].dir === "in";
-        return '<tr class="is-clickable" tabindex="0" data-tx="' + tx.id + '" aria-label="Xem chi tiết giao dịch ' + U.escapeHtml(tx.title) + '">' +
+        return '<tr class="is-clickable' + (tx.status === "failed" ? " is-failed" : "") + '" tabindex="0" data-tx="' + tx.id + '" aria-label="Xem chi tiết giao dịch ' + U.escapeHtml(tx.title) + '">' +
           '<td class="cell-time">' + U.formatDate(tx.date) + "<br>" + U.formatTime(tx.date) + "</td>" +
           '<td><div class="cell-desc">' + App.money.txIconHtml(tx) + "<span>" + U.escapeHtml(tx.title) + "</span></div></td>" +
           '<td class="t-right cell-amount ' + (isIn ? "money-in" : "money-out") + '">' + U.formatSigned(isIn ? tx.amount : -tx.amount) + "</td>" +

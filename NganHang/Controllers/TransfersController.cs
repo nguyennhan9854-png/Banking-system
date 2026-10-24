@@ -25,6 +25,7 @@ public class TransfersController : ControllerBase
         var result = _bank.Transfer(req);
         if (result.Ok) return result.Value!;
         if (result.NotFound) return NotFound(new ErrorDto(result.Error!));
+        if (result.RolledBack) return Conflict(new ErrorDto(result.Error!));
         return BadRequest(new ErrorDto(result.Error!));
     }
 }

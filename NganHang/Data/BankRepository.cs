@@ -45,14 +45,31 @@ public class BankRepository
         lock (_lock) return reader(_data);
     }
 
-    /// <summary>Sửa dữ liệu rồi lưu file. Nếu hàm trả về saveChanges = false thì không lưu.</summary>
+    /// <summary>
+    /// Sửa dữ liệu rồi lưu file – TẤT CẢ HOẶC KHÔNG GÌ CẢ (rollback).
+    /// Trước khi sửa, chụp lại một bản sao dữ liệu. Nếu hàm sửa ném lỗi giữa chừng
+    /// (ví dụ đã trừ tài khoản nguồn nhưng chưa cộng tài khoản nhận) hoặc lưu file thất bại,
+    /// dữ liệu trong bộ nhớ được trả về đúng bản sao đó rồi ném lỗi tiếp cho BankService xử lý.
+    /// File trên đĩa không bị ghi dở vì chỉ được thay khi file tạm đã ghi xong.
+    /// Nếu hàm trả về saveChanges = false thì không lưu.
+    /// </summary>
     public T Write<T>(Func<BankData, (T result, bool saveChanges)> writer)
     {
         lock (_lock)
         {
-            var (result, save) = writer(_data);
-            if (save) Save();
-            return result;
+            var snapshot = Clone(_data);
+            try
+            {
+                var (result, save) = writer(_data);
+                if (save) Save();
+                return result;
+            }
+            catch
+            {
+                _data = snapshot;   // ROLLBACK: bỏ mọi thay đổi dở dang
+                _logger.LogWarning("Thao tác ghi dữ liệu bị lỗi giữa chừng, đã khôi phục dữ liệu về trước thao tác");
+                throw;
+            }
         }
     }
 
@@ -66,11 +83,14 @@ public class BankRepository
         }
     }
 
+    /// <summary>Đường dẫn bản sao lưu file hỏng gần nhất (null nếu lần khởi động này file vẫn tốt).</summary>
+    public string? CorruptBackupPath { get; private set; }
+
     private BankData LoadOrSeed()
     {
-        try
+        if (File.Exists(_filePath))
         {
-            if (File.Exists(_filePath))
+            try
             {
                 var json = File.ReadAllText(_filePath);
                 var data = JsonSerializer.Deserialize<BankData>(json, FileJson);
@@ -79,11 +99,13 @@ public class BankRepository
                     _logger.LogInformation("Đã đọc dữ liệu từ {Path}", _filePath);
                     return data;
                 }
+                _logger.LogWarning("File dữ liệu không đúng định dạng, sẽ tạo lại dữ liệu mẫu");
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "File dữ liệu bị lỗi, sẽ tạo lại dữ liệu mẫu");
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "File dữ liệu bị lỗi, sẽ tạo lại dữ liệu mẫu");
+            }
+            BackupCorruptFile();
         }
 
         var seeded = SeedData.Create(DateTime.Now);
@@ -93,12 +115,44 @@ public class BankRepository
         return seeded;
     }
 
+    /// <summary>
+    /// File hỏng KHÔNG bị ghi đè mất: đổi tên thành bank-data.json.corrupt-yyyyMMdd-HHmmss
+    /// để còn kiểm tra / khôi phục bằng tay, rồi mới tạo dữ liệu mẫu mới.
+    /// </summary>
+    private void BackupCorruptFile()
+    {
+        try
+        {
+            var backup = _filePath + ".corrupt-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff");
+            File.Move(_filePath, backup, overwrite: true);
+            CorruptBackupPath = backup;
+            _logger.LogWarning("Đã sao lưu file dữ liệu hỏng tại {Path}", backup);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Không sao lưu được file dữ liệu hỏng");
+        }
+    }
+
     private void Save()
     {
         // Ghi ra file tạm rồi thay thế để không bị hỏng file nếu tắt ngang
         var tmp = _filePath + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(_data, FileJson));
-        _faults.Hit(FaultPoints.SaveFile);   // giả lập lỗi: đã ghi file tạm nhưng chưa kịp thay file chính
-        File.Move(tmp, _filePath, overwrite: true);
+        try
+        {
+            File.WriteAllText(tmp, JsonSerializer.Serialize(_data, FileJson));
+            _faults.Hit(FaultPoints.SaveFile);   // giả lập lỗi: đã ghi file tạm nhưng chưa kịp thay file chính
+            File.Move(tmp, _filePath, overwrite: true);
+        }
+        catch
+        {
+            // Lưu thất bại: xóa file tạm ghi dở, file chính vẫn là bản cũ
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { /* bỏ qua */ }
+            throw;
+        }
     }
+
+    /// <summary>Bản sao độc lập của toàn bộ dữ liệu (dùng để hoàn tác).</summary>
+    private static BankData Clone(BankData data) =>
+        JsonSerializer.Deserialize<BankData>(JsonSerializer.SerializeToUtf8Bytes(data, FileJson), FileJson)!;
 }

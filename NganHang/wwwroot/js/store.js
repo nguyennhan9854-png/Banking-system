@@ -66,6 +66,15 @@ App.store = (function () {
     return r;
   }
 
+  /**
+   * Thao tác ghi bị lỗi. Nếu server báo 409 (lỗi giữa chừng, đã hoàn tác) thì vẫn tải lại
+   * để giao dịch "Thất bại" hiện ngay trên các trang.
+   */
+  async function failed(r) {
+    if (r.status === 409) await afterWrite("failed");
+    return { ok: false, error: r.error, rolledBack: r.status === 409 };
+  }
+
   /** Sau khi ghi: tải lại trạng thái + báo các tab khác */
   async function afterWrite(reason) {
     await refresh(reason);
@@ -157,14 +166,14 @@ App.store = (function () {
 
   async function deposit(accountId, amount) {
     const r = await request("POST", "/accounts/" + encodeURIComponent(accountId) + "/deposit", { amount: amount });
-    if (!r.ok) return { ok: false, error: r.error };
+    if (!r.ok) return failed(r);
     await afterWrite("deposit");
     return { ok: true, account: getAccount(accountId) || r.data.account, tx: r.data.transaction };
   }
 
   async function withdraw(accountId, amount) {
     const r = await request("POST", "/accounts/" + encodeURIComponent(accountId) + "/withdraw", { amount: amount });
-    if (!r.ok) return { ok: false, error: r.error };
+    if (!r.ok) return failed(r);
     await afterWrite("withdraw");
     return { ok: true, account: getAccount(accountId) || r.data.account, tx: r.data.transaction, usesOverdraft: r.data.usesOverdraft };
   }
@@ -183,7 +192,7 @@ App.store = (function () {
       amount: Number(opts.amount) || 0,
       note: opts.note || null
     });
-    if (!r.ok) return { ok: false, error: r.error };
+    if (!r.ok) return failed(r);
     await afterWrite("transfer");
     return {
       ok: true,
@@ -197,7 +206,7 @@ App.store = (function () {
   /** Nhận ngay tiền lãi tạm tính của 1 tài khoản tiết kiệm */
   async function applyInterest(accountId) {
     const r = await request("POST", "/interest/" + encodeURIComponent(accountId) + "/apply");
-    if (!r.ok) return { ok: false, error: r.error };
+    if (!r.ok) return failed(r);
     await afterWrite("interest");
     return { ok: true, transactions: r.data.transactions, total: r.data.totalAmount };
   }
@@ -205,7 +214,7 @@ App.store = (function () {
   /** Chạy đợt cộng lãi tự động ngay (chỉ cộng các kỳ đã đến hạn) */
   async function runInterest() {
     const r = await request("POST", "/interest/run");
-    if (!r.ok) return { ok: false, error: r.error };
+    if (!r.ok) return failed(r);
     await afterWrite("interest");
     return { ok: true, transactions: r.data.transactions, total: r.data.totalAmount };
   }
@@ -218,7 +227,7 @@ App.store = (function () {
       initialAmount: Number(opts.initialAmount) || 0,
       overdraftLimit: Number(opts.overdraftLimit) || 0
     });
-    if (!r.ok) return { ok: false, error: r.error };
+    if (!r.ok) return failed(r);
     await afterWrite("open-account");
     return { ok: true, account: getAccount(r.data.id) || r.data };
   }

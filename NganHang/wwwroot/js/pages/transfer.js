@@ -184,7 +184,7 @@ App.boot(function () {
 
   /* ---------- Chuyển tiền gần đây ---------- */
   function renderRecent() {
-    const list = S.getTransactions().filter(function (t) { return t.type === "transfer_out"; }).slice(0, 5);
+    const list = S.getTransactions().filter(function (t) { return t.type === "transfer_out" && t.status === "success"; }).slice(0, 5);
     if (!list.length) {
       els.recent.innerHTML = '<li class="empty">Chưa có giao dịch chuyển tiền nào.</li>';
       return;

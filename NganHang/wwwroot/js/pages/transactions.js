@@ -13,6 +13,7 @@ App.boot(function () {
     q: U.qs("[data-f-q]"),
     acc: U.qs("[data-f-acc]"),
     type: U.qs("[data-f-type]"),
+    status: U.qs("[data-f-status]"),
     reset: U.qs("[data-f-reset]"),
     table: U.qs("[data-tx-table]"),
     pager: U.qs("[data-pager]"),
@@ -32,6 +33,7 @@ App.boot(function () {
   // Từ khóa từ ô tìm kiếm ở header (giao-dich.html?q=...)
   const params = new URLSearchParams(window.location.search);
   if (params.get("q")) els.q.value = params.get("q");
+  if (params.get("status") === "failed" || params.get("status") === "success") els.status.value = params.get("status");
 
   function renderAccountFilter() {
     const cur = els.acc.value;
@@ -45,8 +47,10 @@ App.boot(function () {
     const q = U.normalizeText(els.q.value);
     const accId = els.acc.value;
     const group = TYPE_GROUPS[els.type.value];
+    const status = els.status.value;
     return S.getTransactions().filter(function (tx) {
       if (accId && tx.accountId !== accId) return false;
+      if (status && tx.status !== status) return false;
       if (group && group.indexOf(tx.type) === -1) return false;
       if (q) {
         const acc = S.getAccount(tx.accountId);
@@ -62,10 +66,14 @@ App.boot(function () {
     const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
     if (page > pages) page = pages;
     const slice = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-    const totalIn = list.reduce(function (s, t) { return s + (S.TX_TYPES[t.type].dir === "in" ? t.amount : 0); }, 0);
-    const totalOut = list.reduce(function (s, t) { return s + (S.TX_TYPES[t.type].dir === "out" ? t.amount : 0); }, 0);
+    // Chỉ giao dịch THÀNH CÔNG mới tính vào tổng tiền (giao dịch thất bại đã được hoàn tác)
+    const done = list.filter(function (t) { return t.status === "success"; });
+    const totalIn = done.reduce(function (s, t) { return s + (S.TX_TYPES[t.type].dir === "in" ? t.amount : 0); }, 0);
+    const totalOut = done.reduce(function (s, t) { return s + (S.TX_TYPES[t.type].dir === "out" ? t.amount : 0); }, 0);
+    const failedCount = list.length - done.length;
     els.summary.innerHTML = list.length + " giao dịch, tiền vào <strong class=\"money-in\">" + U.formatVND(totalIn) +
-      "</strong>, tiền ra <strong class=\"money-out\">" + U.formatVND(totalOut) + "</strong>";
+      "</strong>, tiền ra <strong class=\"money-out\">" + U.formatVND(totalOut) + "</strong>" +
+      (failedCount ? ', <strong class="money-out">' + failedCount + " thất bại</strong>" : "");
 
     if (!slice.length) {
       els.table.innerHTML = '<div class="empty">Không tìm thấy giao dịch phù hợp. Hãy thử từ khóa khác hoặc bấm “Xóa bộ lọc”.</div>';
@@ -81,7 +89,7 @@ App.boot(function () {
         const acc = S.getAccount(tx.accountId);
         const meta = S.TX_TYPES[tx.type];
         const isIn = meta.dir === "in";
-        return '<tr class="is-clickable" tabindex="0" data-tx="' + tx.id + '">' +
+        return '<tr class="is-clickable' + (tx.status === "failed" ? " is-failed" : "") + '" tabindex="0" data-tx="' + tx.id + '">' +
           '<td class="cell-time">' + U.formatDate(tx.date) + "<br>" + U.formatTime(tx.date) + "</td>" +
           '<td><span class="tx-type">' + App.money.txIconHtml(tx, 15) + meta.label + "</span></td>" +
           '<td class="cell-2l cell-acc">' + (acc ? U.escapeHtml(acc.name) : "—") + "<small>" + (acc ? U.maskNumber(acc.accountNumber) : "") + "</small></td>" +
@@ -105,8 +113,9 @@ App.boot(function () {
   els.q.addEventListener("input", function () { clearTimeout(t); t = setTimeout(function () { page = 1; render(); }, 200); });
   els.acc.addEventListener("change", function () { page = 1; render(); });
   els.type.addEventListener("change", function () { page = 1; render(); });
+  els.status.addEventListener("change", function () { page = 1; render(); });
   els.reset.addEventListener("click", function () {
-    els.q.value = ""; els.acc.value = ""; els.type.value = ""; page = 1;
+    els.q.value = ""; els.acc.value = ""; els.type.value = ""; els.status.value = ""; page = 1;
     const hs = document.getElementById("global-search");
     if (hs) hs.value = "";
     if (window.history.replaceState) window.history.replaceState(null, "", "giao-dich.html");

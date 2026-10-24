@@ -43,14 +43,24 @@ public class AccountsController : ControllerBase
     public ActionResult<AccountDto> Open([FromBody] OpenAccountRequest req)
     {
         var result = _bank.OpenAccount(req);
+        if (result.RolledBack) return Conflict(new ErrorDto(result.Error!));
         if (!result.Ok) return BadRequest(new ErrorDto(result.Error!));
         return CreatedAtAction(nameof(Get), new { id = result.Value!.Id }, result.Value);
     }
+
+    /// <summary>
+    /// POST /api/accounts/{id}/lock  body: { "locked": true }
+    /// Khóa tạm thời (hoặc mở khóa) tài khoản. Tài khoản bị khóa không nạp/rút/chuyển/nhận tiền.
+    /// </summary>
+    [HttpPost("{id}/lock")]
+    public ActionResult<AccountDto> Lock(string id, [FromBody] LockRequest req)
+        => ToResponse(_bank.SetLocked(id, req.Locked));
 
     private ActionResult<T> ToResponse<T>(ServiceResult<T> result)
     {
         if (result.Ok) return new ActionResult<T>(result.Value!);
         if (result.NotFound) return new ActionResult<T>(NotFound(new ErrorDto(result.Error!)));
+        if (result.RolledBack) return new ActionResult<T>(Conflict(new ErrorDto(result.Error!)));
         return new ActionResult<T>(BadRequest(new ErrorDto(result.Error!)));
     }
 }

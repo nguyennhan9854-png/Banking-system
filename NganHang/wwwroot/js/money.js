@@ -224,8 +224,12 @@ App.money = (function () {
           row("receipt", "Nội dung", U.escapeHtml(tx.title)) +
           row("bank", "Chi tiết", U.escapeHtml(tx.subtitle || "—")) +
           row("trendUp", "Số tiền", U.formatVND(tx.amount), "is-big") +
-          row("layers", "Số dư sau giao dịch", U.formatVND(tx.balanceAfter), "is-big") +
+          row("layers", tx.status === "failed" ? "Số dư (không đổi)" : "Số dư sau giao dịch", U.formatVND(tx.balanceAfter), "is-big") +
         "</div>" +
+        (tx.status === "failed"
+          ? '<p class="tx-detail__note--failed">Giao dịch gặp sự cố giữa chừng nên hệ thống đã <strong>hoàn tác toàn bộ</strong>. ' +
+            "Không có tiền nào bị trừ hoặc cộng, bạn có thể thực hiện lại.</p>"
+          : "") +
         '<div class="modal__foot" style="grid-template-columns:1fr">' +
           '<button type="button" class="btn btn--outline btn--lg" data-close>Đóng</button>' +
         "</div>"

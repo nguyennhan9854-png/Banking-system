@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Logging.Abstractions;
 using NganHang.Data;
 using NganHang.Models;
 
@@ -24,15 +25,25 @@ public class BankService
 
     private static readonly long[] AllowedOverdraftLimits = { 0, 5_000_000, 10_000_000 };
 
+    /// <summary>Thông báo khi một thao tác bị lỗi giữa chừng và đã được hoàn tác.</summary>
+    public const string RolledBackMessage =
+        "Giao dịch không thành công do sự cố hệ thống. Mọi thay đổi đã được hoàn tác, số dư của bạn giữ nguyên.";
+
+    public const string InterestRolledBackMessage =
+        "Đợt cộng lãi bị lỗi giữa chừng nên đã được hoàn tác, chưa kỳ nào được cộng. Hệ thống sẽ thử lại ở lần kiểm tra sau.";
+
     private readonly BankRepository _repo;
     private readonly IFaultInjector _faults;
+    private readonly ILogger<BankService> _logger;
 
     /// <param name="repo">Kho dữ liệu (file JSON).</param>
     /// <param name="faults">Điểm cắm lỗi giả lập cho unit test rollback; chạy thật dùng NoFaults.</param>
-    public BankService(BankRepository repo, IFaultInjector? faults = null)
+    /// <param name="logger">Ghi log khi có sự cố (unit test có thể bỏ trống).</param>
+    public BankService(BankRepository repo, IFaultInjector? faults = null, ILogger<BankService>? logger = null)
     {
         _repo = repo;
         _faults = faults ?? NoFaults.Instance;
+        _logger = logger ?? NullLogger<BankService>.Instance;
     }
 
     // ============================================================
@@ -121,14 +132,17 @@ public class BankService
     //  GHI DỮ LIỆU
     // ============================================================
 
-    public ServiceResult<DepositWithdrawResult> Deposit(string accountId, long amount) => _repo.Write(d =>
+    public ServiceResult<DepositWithdrawResult> Deposit(string accountId, long amount) => Atomic<DepositWithdrawResult>((d, op) =>
     {
         var acc = d.Accounts.FirstOrDefault(a => a.Id == accountId);
         if (acc == null) return (ServiceResult<DepositWithdrawResult>.Missing("Không tìm thấy tài khoản."), false);
+        if (acc.Status != "active") return (ServiceResult<DepositWithdrawResult>.Fail("Tài khoản đang bị khóa."), false);
         if (amount <= 0) return (ServiceResult<DepositWithdrawResult>.Fail("Vui lòng nhập số tiền lớn hơn 0."), false);
         if (amount > MaxAmount)
             return (ServiceResult<DepositWithdrawResult>.Fail("Số tiền tối đa mỗi lần nạp là " + Vnd(MaxAmount) + "."), false);
 
+        op.Describe(acc.Id, "deposit", amount, "Nạp tiền vào tài khoản", acc.Name,
+            "Nạp " + Vnd(amount) + " vào " + acc.Name + " thất bại – đã hoàn tác, số dư giữ nguyên");
         acc.Balance += amount;
         _faults.Hit(FaultPoints.DepositAfterCredit);
         var tx = AddTransaction(d, acc, "deposit", amount, "Nạp tiền vào tài khoản", acc.Name);
@@ -136,10 +150,11 @@ public class BankService
         return (ServiceResult<DepositWithdrawResult>.Success(Result(d, acc, tx, false)), true);
     });
 
-    public ServiceResult<DepositWithdrawResult> Withdraw(string accountId, long amount) => _repo.Write(d =>
+    public ServiceResult<DepositWithdrawResult> Withdraw(string accountId, long amount) => Atomic<DepositWithdrawResult>((d, op) =>
     {
         var acc = d.Accounts.FirstOrDefault(a => a.Id == accountId);
         if (acc == null) return (ServiceResult<DepositWithdrawResult>.Missing("Không tìm thấy tài khoản."), false);
+        if (acc.Status != "active") return (ServiceResult<DepositWithdrawResult>.Fail("Tài khoản đang bị khóa."), false);
         if (amount <= 0) return (ServiceResult<DepositWithdrawResult>.Fail("Vui lòng nhập số tiền lớn hơn 0."), false);
         if (amount > MaxAmount)
             return (ServiceResult<DepositWithdrawResult>.Fail("Số tiền tối đa mỗi lần rút là " + Vnd(MaxAmount) + "."), false);
@@ -150,6 +165,8 @@ public class BankService
         if (spendError != null) return (ServiceResult<DepositWithdrawResult>.Fail(spendError), false);
 
         var usesOverdraft = acc.Type == "payment" && amount > acc.Balance;
+        op.Describe(acc.Id, "withdraw", amount, "Rút tiền từ tài khoản", acc.Name,
+            "Rút " + Vnd(amount) + " từ " + acc.Name + " thất bại – đã hoàn tác, số dư giữ nguyên");
         acc.Balance -= amount;
         _faults.Hit(FaultPoints.WithdrawAfterDebit);
         var tx = AddTransaction(d, acc, "withdraw", amount, "Rút tiền từ tài khoản", acc.Name);
@@ -164,8 +181,10 @@ public class BankService
     /// Kiểm tra: số tiền hợp lệ, không chuyển cho chính tài khoản nguồn,
     /// tài khoản tiết kiệm không được âm, tài khoản thanh toán không vượt hạn mức thấu chi.
     /// Nếu không hợp lệ thì KHÔNG thay đổi số dư và KHÔNG ghi giao dịch.
+    /// Trừ nguồn + cộng đích + 2 giao dịch là MỘT khối: lỗi ở bất kỳ bước nào thì hoàn tác tất cả (rollback)
+    /// và ghi lại 1 giao dịch trạng thái "failed".
     /// </summary>
-    public ServiceResult<TransferResult> Transfer(TransferRequest req) => _repo.Write(d =>
+    public ServiceResult<TransferResult> Transfer(TransferRequest req) => Atomic<TransferResult>((d, op) =>
     {
         if (req == null) return (ServiceResult<TransferResult>.Fail("Thiếu thông tin chuyển tiền."), false);
 
@@ -236,10 +255,11 @@ public class BankService
 
         // 6. Ghi nhận: trừ nguồn, cộng đích (nếu nội bộ), lưu 2 giao dịch
         var usesOverdraft = source.Type == "payment" && amount > source.Balance;
+        var outSubtitle = recipientBank + " · " + recipientNumber + " · " + note;
+        op.Describe(source.Id, "transfer_out", amount, "Chuyển tiền đến " + recipientName, outSubtitle,
+            "Chuyển " + Vnd(amount) + " đến " + recipientName + " thất bại – đã hoàn tác, số dư giữ nguyên");
         source.Balance -= amount;
-        var outTx = AddTransaction(d, source, "transfer_out", amount,
-            "Chuyển tiền đến " + recipientName,
-            recipientBank + " · " + recipientNumber + " · " + note);
+        var outTx = AddTransaction(d, source, "transfer_out", amount, "Chuyển tiền đến " + recipientName, outSubtitle);
         _faults.Hit(FaultPoints.TransferAfterDebit);
 
         Transaction? inTx = null;
@@ -276,23 +296,35 @@ public class BankService
     /// Cộng lãi cho mọi kỳ đã đến hạn tính đến thời điểm <paramref name="asOf"/> (mặc định: bây giờ).
     /// Gọi nhiều lần cũng không cộng trùng.
     /// </summary>
-    public InterestRunResult ApplyDueInterest(DateTime? asOf = null) => _repo.Write(d =>
+    public InterestRunResult ApplyDueInterest(DateTime? asOf = null)
     {
-        var now = asOf ?? DateTime.Now;
-        var posted = new List<Transaction>();
-        var changed = false;
-        foreach (var acc in d.Accounts.Where(EarnsInterest).ToList())
+        try
         {
-            changed |= PostDuePeriods(d, acc, now, posted);
+            return _repo.Write(d =>
+            {
+                var now = asOf ?? DateTime.Now;
+                var posted = new List<Transaction>();
+                var changed = false;
+                foreach (var acc in d.Accounts.Where(EarnsInterest).ToList())
+                {
+                    changed |= PostDuePeriods(d, acc, now, posted);
+                }
+                return (InterestResult(d, posted), changed);
+            });
         }
-        return (InterestResult(d, posted), changed);
-    });
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // BankRepository đã khôi phục dữ liệu: không kỳ nào được cộng dở dang
+            _logger.LogError(ex, "Cộng lãi bị lỗi giữa chừng, đã hoàn tác");
+            return new InterestRunResult(new List<TransactionDto>(), 0, InterestRolledBackMessage);
+        }
+    }
 
     /// <summary>
     /// Nhận lãi ngay cho một tài khoản tiết kiệm: cộng các kỳ đã đến hạn (nếu có)
     /// và phần lãi tạm tính từ đầu kỳ hiện tại đến hết ngày hôm qua. Kỳ mới bắt đầu từ hôm nay.
     /// </summary>
-    public ServiceResult<InterestRunResult> ApplyAccruedInterest(string accountId, DateTime? asOf = null) => _repo.Write(d =>
+    public ServiceResult<InterestRunResult> ApplyAccruedInterest(string accountId, DateTime? asOf = null) => Atomic<InterestRunResult>((d, _) =>
     {
         var now = asOf ?? DateTime.Now;
         var acc = d.Accounts.FirstOrDefault(a => a.Id == accountId);
@@ -329,7 +361,7 @@ public class BankService
         return (ServiceResult<InterestRunResult>.Success(InterestResult(d, posted)), true);
     });
 
-    public ServiceResult<AccountDto> OpenAccount(OpenAccountRequest req) => _repo.Write(d =>
+    public ServiceResult<AccountDto> OpenAccount(OpenAccountRequest req) => Atomic<AccountDto>((d, _) =>
     {
         var type = req.Type;
         if (type != "saving" && type != "payment")
@@ -408,7 +440,94 @@ public class BankService
         return (d.User, true);
     });
 
+    /// <summary>Khóa / mở khóa tài khoản. Tài khoản bị khóa không nạp, rút, chuyển hay nhận tiền được.</summary>
+    public ServiceResult<AccountDto> SetLocked(string accountId, bool locked) => Atomic<AccountDto>((d, _) =>
+    {
+        var acc = d.Accounts.FirstOrDefault(a => a.Id == accountId);
+        if (acc == null) return (ServiceResult<AccountDto>.Missing("Không tìm thấy tài khoản."), false);
+        var status = locked ? "locked" : "active";
+        if (acc.Status == status) return (ServiceResult<AccountDto>.Success(ToDto(d, acc, DateTime.Now)), false);
+        acc.Status = status;
+        AddNotification(d, (locked ? "Đã khóa " : "Đã mở khóa ") + acc.Name + " – STK " + acc.AccountNumber);
+        return (ServiceResult<AccountDto>.Success(ToDto(d, acc, DateTime.Now)), true);
+    });
+
     public void Reset() => _repo.Reset();
+
+    // ============================================================
+    //  ROLLBACK: THAO TÁC "TẤT CẢ HOẶC KHÔNG GÌ CẢ"
+    // ============================================================
+
+    /// <summary>
+    /// Mô tả thao tác đang làm dở (điền NGAY TRƯỚC khi đổi số dư).
+    /// Nếu thao tác bị lỗi, thông tin này dùng để ghi một giao dịch trạng thái "failed".
+    /// Đối tượng này nằm ngoài dữ liệu nên không bị mất khi dữ liệu được hoàn tác.
+    /// </summary>
+    private sealed class PendingOperation
+    {
+        public string? AccountId { get; private set; }
+        public string Type { get; private set; } = "";
+        public long Amount { get; private set; }
+        public string Title { get; private set; } = "";
+        public string Subtitle { get; private set; } = "";
+        public string FailureNotice { get; private set; } = "";
+
+        public void Describe(string accountId, string type, long amount, string title, string subtitle, string failureNotice)
+        {
+            AccountId = accountId;
+            Type = type;
+            Amount = amount;
+            Title = title;
+            Subtitle = subtitle;
+            FailureNotice = failureNotice;
+        }
+    }
+
+    /// <summary>
+    /// Chạy một thao tác ghi như một khối duy nhất.
+    /// - Thành công: lưu tất cả.
+    /// - Lỗi giữa chừng (ngoại lệ ở bất kỳ bước nào, kể cả lúc ghi file): BankRepository khôi phục dữ liệu
+    ///   về bản chụp trước thao tác; ở đây ghi thêm giao dịch "failed" + thông báo rồi trả về lỗi thân thiện.
+    /// </summary>
+    private ServiceResult<T> Atomic<T>(Func<BankData, PendingOperation, (ServiceResult<T> result, bool saveChanges)> work)
+    {
+        var op = new PendingOperation();
+        try
+        {
+            return _repo.Write(d => work(d, op));
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            _logger.LogError(ex, "Thao tác {Type} bị lỗi giữa chừng, đã hoàn tác", op.Type);
+            RecordFailure(op);
+            return ServiceResult<T>.Reverted(RolledBackMessage);
+        }
+    }
+
+    /// <summary>
+    /// Ghi lại thao tác thất bại: 1 giao dịch Status = "failed" (không làm đổi số dư) và 1 thông báo.
+    /// Nếu ngay cả bước này cũng lỗi (ổ đĩa hỏng hẳn) thì bỏ qua – dữ liệu đã được khôi phục an toàn.
+    /// </summary>
+    private void RecordFailure(PendingOperation op)
+    {
+        if (op.AccountId == null) return;
+        try
+        {
+            _repo.Write(d =>
+            {
+                var acc = d.Accounts.FirstOrDefault(a => a.Id == op.AccountId);
+                if (acc == null) return (false, false);
+                var tx = AddTransaction(d, acc, op.Type, op.Amount, op.Title, op.Subtitle + " · Lỗi hệ thống – đã hoàn tác");
+                tx.Status = "failed";
+                AddNotification(d, op.FailureNotice);
+                return (true, true);
+            });
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            _logger.LogError(ex, "Không ghi được giao dịch thất bại");
+        }
+    }
 
     // ============================================================
     //  HÀM TÍNH TOÁN

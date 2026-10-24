@@ -342,7 +342,7 @@ App.boot(function () {
       list.map(function (tx) {
         const acc = S.getAccount(tx.accountId);
         const isIn = S.TX_TYPES[tx.type].dir === "in";
-        return '<tr class="is-clickable" tabindex="0" data-tx="' + tx.id + '">' +
+        return '<tr class="is-clickable' + (tx.status === "failed" ? " is-failed" : "") + '" tabindex="0" data-tx="' + tx.id + '">' +
           '<td><div class="cell-time">' + App.money.txIconHtml(tx, 15) + "<span>" + U.formatDate(tx.date) + "<br>" + U.formatTime(tx.date) + "</span></div></td>" +
           '<td class="cell-2l cell-acc">' + (acc ? (acc.type === "saving" ? "Tiết kiệm" : "Thanh toán") : "—") + "<small>" + (acc ? U.maskNumber(acc.accountNumber) : "") + "</small></td>" +
           '<td class="cell-2l">' + U.escapeHtml(tx.title) + "<small>" + U.escapeHtml(tx.subtitle || "") + "</small></td>" +

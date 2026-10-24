@@ -40,6 +40,11 @@ public class InterestBackgroundService : BackgroundService
         try
         {
             var result = _bank.ApplyDueInterest();
+            if (result.Error != null)
+            {
+                _logger.LogWarning("Tự động cộng lãi chưa thành công: {Error}", result.Error);
+                return;
+            }
             if (result.Transactions.Count > 0)
             {
                 _logger.LogInformation("Tự động cộng lãi {Count} kỳ, tổng {Amount}",

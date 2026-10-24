@@ -424,3 +424,11 @@
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
 }
+
+/* Giao dịch thất bại (đã hoàn tác): số tiền gạch ngang, mờ đi vì không làm đổi số dư */
+.table tr.is-failed .cell-amount { color: var(--muted); text-decoration: line-through; }
+.table tr.is-failed .cell-balance { color: var(--muted); }
+.tx-detail__note--failed {
+  margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+  background: var(--red-soft); color: var(--red); font-size: 14px; line-height: 1.5;
+}

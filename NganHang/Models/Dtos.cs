@@ -89,6 +89,8 @@ public record OpenAccountRequest(string Type, int TermMonths, long InitialAmount
 
 public record OtpRequest(bool Enabled);
 
+public record LockRequest(bool Locked);
+
 /// <summary>
 /// Yêu cầu chuyển tiền. Chuyển nội bộ: điền ToAccountId.
 /// Chuyển ra ngoài: điền ToAccountNumber, ToName, ToBank.
@@ -112,8 +114,11 @@ public class ServiceResult<T>
     public T? Value { get; private init; }
     /// <summary>true nếu lỗi do không tìm thấy (trả 404 thay vì 400)</summary>
     public bool NotFound { get; private init; }
+    /// <summary>true nếu thao tác bị lỗi giữa chừng và đã được hoàn tác (trả 409 thay vì 400)</summary>
+    public bool RolledBack { get; private init; }
 
     public static ServiceResult<T> Success(T value) => new() { Ok = true, Value = value };
     public static ServiceResult<T> Fail(string error) => new() { Ok = false, Error = error };
     public static ServiceResult<T> Missing(string error) => new() { Ok = false, Error = error, NotFound = true };
+    public static ServiceResult<T> Reverted(string error) => new() { Ok = false, Error = error, RolledBack = true };
 }
