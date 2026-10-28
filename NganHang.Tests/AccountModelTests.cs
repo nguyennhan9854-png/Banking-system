@@ -50,7 +50,7 @@ public class AccountModelTests : IDisposable
         Assert.Contains("vượt quá hạn mức", Payment(0, 5_000_000).CheckSpend(5_000_001, "chuyển"));
     }
 
-    [Fact(DisplayName = "OOP03 Đa hình: chỉ tài khoản tiết kiệm đang hoạt động, có lãi suất mới được cộng lãi")]
+    [Fact(DisplayName = "OOP03 Đa hình: tài khoản tiết kiệm có lãi suất được cộng lãi, kể cả khi đang bị khóa (quy tắc tuần 4)")]
     public void Polymorphism_EarnsInterest()
     {
         var locked = Saving(1_000_000);
@@ -58,7 +58,7 @@ public class AccountModelTests : IDisposable
 
         Assert.True(Saving(1_000_000).EarnsInterest);
         Assert.False(Saving(1_000_000, rate: 0).EarnsInterest);
-        Assert.False(locked.EarnsInterest);
+        Assert.True(locked.EarnsInterest);          // tuần 4: khóa chỉ chặn giao dịch, không làm mất lãi
         Assert.False(Payment(1_000_000, 10_000_000).EarnsInterest);
     }
 
