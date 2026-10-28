@@ -22,7 +22,8 @@ public record AccountDto(
     long AvailableBalance,
     double? GrowthPercent,
     TermInfo? Term,
-    InterestInfo? Interest);
+    InterestInfo? Interest,
+    DateTime? LockedAt = null);
 
 /// <summary>
 /// Thông tin cộng lãi hằng tháng của tài khoản tiết kiệm.
