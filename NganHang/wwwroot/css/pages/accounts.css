@@ -198,3 +198,12 @@
   .form-row { grid-template-columns: 1fr; gap: 6px; }
   .form-row .field-error { grid-column: 1; margin-top: 0; }
 }
+
+/* Tuần 4: thẻ tài khoản bị khóa */
+.acct--locked .acct__amount strong { color: var(--muted); }
+.acct--locked .acct__art { filter: grayscale(.8); opacity: .55; }
+.acct__locked-note {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
+  font-size: 12.5px; font-weight: 600; color: var(--red);
+  background: var(--red-soft); padding: 4px 10px; border-radius: 8px;
+}

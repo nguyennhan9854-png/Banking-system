@@ -138,6 +138,7 @@ App.store = (function () {
     verb = verb || "rút";
     const acc = getAccount(accountId);
     if (!acc) return { ok: false, error: "Không tìm thấy tài khoản." };
+    if (acc.status !== "active") return { ok: false, locked: true, error: "Tài khoản đang bị khóa, không " + verb + " được." };
     if (!amount || amount <= 0) return { ok: false, error: "Vui lòng nhập số tiền lớn hơn 0." };
     const available = acc.availableBalance;
     if (amount > available) {
@@ -233,6 +234,20 @@ App.store = (function () {
     return { ok: true, transactions: r.data.transactions, total: r.data.totalAmount };
   }
 
+  /** Tuần 4: khóa (locked = true) hoặc mở khóa tài khoản */
+  async function setLocked(accountId, locked) {
+    const r = await request("POST", "/accounts/" + encodeURIComponent(accountId) + "/lock", { locked: !!locked });
+    if (!r.ok) return failed(r);
+    await afterWrite("lock");
+    return { ok: true, account: getAccount(accountId) || r.data };
+  }
+
+  /** true nếu tài khoản đang bị khóa */
+  function isLocked(accountOrId) {
+    const acc = typeof accountOrId === "string" ? getAccount(accountOrId) : accountOrId;
+    return !!acc && acc.status !== "active";
+  }
+
   /** opts = { type, termMonths, initialAmount, overdraftLimit } */
   async function openAccount(opts) {
     const r = await request("POST", "/accounts", {
@@ -287,7 +302,7 @@ App.store = (function () {
     getAccounts: getAccounts, getAccount: getAccount, getPrimary: getPrimary,
     getTransactions: getTransactions, getTransaction: getTransaction,
     totalBalance: totalBalance, growth: growth, savingTerm: savingTerm, checkWithdraw: checkWithdraw,
-    balanceSeries: balanceSeries, getStatistics: getStatistics, deposit: deposit, withdraw: withdraw, transfer: transfer, applyInterest: applyInterest, runInterest: runInterest, openAccount: openAccount,
+    balanceSeries: balanceSeries, getStatistics: getStatistics, deposit: deposit, withdraw: withdraw, transfer: transfer, applyInterest: applyInterest, setLocked: setLocked, isLocked: isLocked, runInterest: runInterest, openAccount: openAccount,
     markNotificationRead: markNotificationRead, markAllNotificationsRead: markAllNotificationsRead,
     setOtp: setOtp, reset: reset, subscribe: subscribe
   };

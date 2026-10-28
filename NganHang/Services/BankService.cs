@@ -588,6 +588,7 @@ public class BankService
         var status = locked ? "locked" : "active";
         if (acc.Status == status) return (ServiceResult<AccountDto>.Success(ToDto(d, acc, DateTime.Now)), false);
         acc.Status = status;
+        acc.LockedAt = locked ? DateTime.Now : null;
         AddNotification(d, (locked ? "Đã khóa " : "Đã mở khóa ") + acc.Name + " – STK " + acc.AccountNumber);
         return (ServiceResult<AccountDto>.Success(ToDto(d, acc, DateTime.Now)), true);
     });
@@ -852,7 +853,9 @@ public class BankService
         (a as SavingAccount)?.TermMonths ?? 0,
         (a as PaymentAccount)?.OverdraftLimit ?? 0,
         a.Branch,
-        a.AvailableBalance, Growth(d, a, now), SavingTerm(a), InterestOf(d, a, now));
+        a.IsActive ? a.AvailableBalance : 0,   // bị khóa thì không chi được đồng nào
+        Growth(d, a, now), SavingTerm(a), InterestOf(d, a, now),
+        a.LockedAt);
 
     private static DepositWithdrawResult Result(BankData d, Account acc, Transaction tx, bool usesOverdraft)
     {

@@ -432,3 +432,34 @@
   margin-top: 12px; padding: 10px 12px; border-radius: 10px;
   background: var(--red-soft); color: var(--red); font-size: 14px; line-height: 1.5;
 }
+
+/* ===== Tuần 4: tài khoản bị khóa ===== */
+.badge--locked { background: #EEF1F6; color: #4B5568; gap: 5px; }
+.btn--red { background: var(--red); color: #fff; }
+.btn--red:hover { filter: brightness(.94); }
+.btn--outline-red { background: #fff; color: var(--red); border: 1.5px solid #F5B5B5; }
+.btn--outline-red:hover { background: var(--red-soft); border-color: var(--red); }
+.info-cell__value:has(small) { flex-wrap: wrap; }
+.info-cell__value small { flex-basis: 100%; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+
+.lock-panel {
+  margin-top: 16px; padding: 14px 16px; border-radius: 12px;
+  border: 1px solid var(--border-2); background: #F8FAFD;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; align-items: center;
+}
+.lock-panel--locked { background: #FFF7F7; border-color: #F7D4D4; }
+.lock-panel__text { display: flex; gap: 10px; align-items: flex-start; color: var(--text-2); font-size: 13.5px; line-height: 1.45; }
+.lock-panel__text .ic { flex: none; margin-top: 2px; color: var(--navy); }
+.lock-panel--locked .lock-panel__text .ic { color: var(--red); }
+.lock-panel__text strong { display: block; color: var(--text); font-size: 14.5px; }
+.lock-panel__btn { height: 40px; white-space: nowrap; }
+.lock-panel__confirm { display: none; grid-column: 1 / -1; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 14px; color: var(--text); }
+.lock-panel.is-confirm .lock-panel__confirm { display: block; }
+.lock-panel.is-confirm .lock-panel__btn { display: none; }
+.lock-panel__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.lock-panel__actions .btn { height: 40px; }
+.lock-panel .field-error { grid-column: 1 / -1; margin: 0; }
+@media (max-width: 480px) {
+  .lock-panel { grid-template-columns: 1fr; }
+  .lock-panel__btn { width: 100%; }
+}

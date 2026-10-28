@@ -38,7 +38,7 @@ App.money = (function () {
             '<button type="button" class="copy-btn" data-copy="' + acc.accountNumber.replace(/\s/g, "") + '" aria-label="Sao chép số tài khoản">' + App.icon("copy", 16) + "</button></div>" +
         "</div>" +
         '<div class="acc-block__bal">' +
-          (mode === "withdraw" ? '<span class="badge badge--success badge--dot badge--sm">Đang hoạt động</span>' : "") +
+          (mode === "withdraw" ? accountStatusBadge(acc) : "") +
           '<div class="acc-block__label">Số dư hiện tại</div>' +
           '<div class="acc-block__amount' + (acc.balance < 0 ? " money-out" : "") + '">' + U.formatVND(acc.balance) + "</div>" + extra + "</div>" +
       "</div>"
@@ -49,11 +49,19 @@ App.money = (function () {
    * Modal chung cho nạp/rút. mode = "deposit" | "withdraw"
    */
   function openMoney(mode, accountId) {
-    const accounts = S.getAccounts();
-    if (!accounts.length) return;
+    // Tài khoản bị khóa không nạp/rút được nên không đưa vào danh sách chọn
+    const accounts = S.getAccounts().filter(function (a) { return !S.isLocked(a); });
     let acc = (accountId && S.getAccount(accountId)) || null;
+    if (acc && S.isLocked(acc)) {
+      U.showToast(acc.name + " đang bị khóa. Mở khóa trong “Xem chi tiết” để " + (mode === "withdraw" ? "rút" : "nạp") + " tiền.", "error");
+      return;
+    }
+    if (!accounts.length) { U.showToast("Không có tài khoản nào đang hoạt động.", "error"); return; }
     const chooser = !acc;
-    if (!acc) acc = mode === "withdraw" ? (S.getPrimary("payment") || accounts[0]) : (S.getPrimary("saving") || accounts[0]);
+    if (!acc) {
+      const prefer = S.getPrimary(mode === "withdraw" ? "payment" : "saving");
+      acc = prefer && !S.isLocked(prefer) ? prefer : accounts[0];
+    }
     const isW = mode === "withdraw";
     const chips = isW ? WITHDRAW_CHIPS : DEPOSIT_CHIPS;
 
@@ -193,6 +201,15 @@ App.money = (function () {
     return '<span class="tx-ic tx-ic--' + meta.tone + '">' + App.icon(meta.icon, size || 16, 2.4) + "</span>";
   }
 
+  /** Nhãn trạng thái tài khoản: Đang hoạt động / Đã khóa (tuần 4) */
+  function accountStatusBadge(acc) {
+    if (S.isLocked(acc)) {
+      return '<span class="badge badge--locked badge--sm" title="' + (acc.lockedAt ? "Khóa lúc " + U.formatDateTime(acc.lockedAt) : "Đã khóa") + '">' +
+        App.icon("lock", 13, 2.4) + "Đã khóa</span>";
+    }
+    return '<span class="badge badge--success badge--dot badge--sm">Đang hoạt động</span>';
+  }
+
   function statusBadge(status) {
     if (status === "pending") return '<span class="badge badge--pending">Đang xử lý</span>';
     if (status === "failed") return '<span class="badge badge--failed">Thất bại</span>';
@@ -242,6 +259,7 @@ App.money = (function () {
     openTransaction: openTransaction,
     txIconHtml: txIconHtml,
     statusBadge: statusBadge,
+    accountStatusBadge: accountStatusBadge,
     accountBlock: accountBlock
   };
 })();

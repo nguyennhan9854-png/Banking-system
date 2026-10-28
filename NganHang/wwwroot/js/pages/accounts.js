@@ -51,14 +51,19 @@ App.boot(function () {
       : infoItem("percent", "Lãi suất hiện tại", U.formatPercent(acc.interestRate, 1) + "/năm", "is-green");
     const overdraftNote = isPay && acc.balance < 0 && !isHidden
       ? '<div class="acct__overdraft">Đang dùng thấu chi ' + U.formatVND(-acc.balance) + "</div>" : "";
+    const locked = S.isLocked(acc);
+    const lockNote = locked
+      ? '<div class="acct__locked-note">' + App.icon("lock", 15, 2.4) + "Đã khóa" +
+        (acc.lockedAt ? " từ " + U.formatDateTime(acc.lockedAt) : "") + " – không nạp, rút, chuyển hay nhận tiền</div>" : "";
+    const off = locked ? ' disabled title="Tài khoản đang bị khóa"' : "";
     return (
-      '<article class="acct ' + (isPay ? "acct--pay" : "acct--save") + '" id="' + acc.id + '" data-account="' + acc.id + '">' +
+      '<article class="acct ' + (isPay ? "acct--pay" : "acct--save") + (locked ? " acct--locked" : "") + '" id="' + acc.id + '" data-account="' + acc.id + '">' +
         '<div class="acct__top">' +
           '<div class="acct__head-row">' +
             '<span class="acct__icon">' + App.icon(isPay ? "card" : "piggy", 30) + "</span>" +
             "<div>" +
               '<div class="acct__titlebar"><h3 class="acct__title">' + U.escapeHtml(acc.name) + "</h3>" +
-                '<span class="badge badge--success badge--dot badge--sm">Đang hoạt động</span></div>' +
+                App.money.accountStatusBadge(acc) + "</div>" +
               '<div class="acct__label">Số tài khoản</div>' +
               '<div class="acct__num">' + acc.accountNumber +
                 '<button type="button" class="copy-btn" data-copy="' + acc.accountNumber.replace(/\s/g, "") + '" aria-label="Sao chép số tài khoản ' + U.escapeHtml(acc.name) + '">' + App.icon("copy", 17) + "</button></div>" +
@@ -69,7 +74,7 @@ App.boot(function () {
             '<div class="acct__amount"><strong class="' + (isHidden ? "is-hidden" : acc.balance < 0 ? "is-negative" : "") + '" data-amount>' + amount + "</strong>" +
               '<button type="button" class="eye-btn" data-eye="' + acc.id + '" aria-pressed="' + isHidden + '" aria-label="' + (isHidden ? "Hiện số dư" : "Ẩn số dư") + '">' +
                 App.icon(isHidden ? "eyeOff" : "eye", 20) + "</button></div>" +
-            overdraftNote +
+            overdraftNote + lockNote +
           "</div>" +
           '<img class="acct__art" src="assets/images/' + (isPay ? "bank-cards.png" : "piggy.png") + '" alt="">' +
         "</div>" +
@@ -80,8 +85,8 @@ App.boot(function () {
         "</div>" +
         '<div class="acct__actions">' +
           '<button type="button" class="btn ' + (isPay ? "btn--acc-pay" : "btn--primary") + '" data-detail="' + acc.id + '">Xem chi tiết ' + App.icon("chevronRight", 16, 2.4) + "</button>" +
-          '<button type="button" class="btn ' + (isPay ? "btn--outline-orange" : "btn--outline") + '" data-deposit="' + acc.id + '">' + App.icon("wallet", 18) + "Nạp tiền</button>" +
-          '<button type="button" class="btn ' + (isPay ? "btn--outline-orange" : "btn--outline") + '" data-withdraw="' + acc.id + '">' + App.icon("arrowUp", 18) + "Rút tiền</button>" +
+          '<button type="button" class="btn ' + (isPay ? "btn--outline-orange" : "btn--outline") + '" data-deposit="' + acc.id + '"' + off + ">" + App.icon("wallet", 18) + "Nạp tiền</button>" +
+          '<button type="button" class="btn ' + (isPay ? "btn--outline-orange" : "btn--outline") + '" data-withdraw="' + acc.id + '"' + off + ">" + App.icon("arrowUp", 18) + "Rút tiền</button>" +
         "</div>" +
       "</article>"
     );
@@ -107,9 +112,12 @@ App.boot(function () {
     let cells = cell("user", "Chủ tài khoản", U.escapeHtml(user.name)) + numCell +
       cell("layers", "Loại tài khoản", U.escapeHtml(acc.productName)) + cell("bank", "Chi nhánh", U.escapeHtml(acc.branch)) +
       cell("calendar", "Ngày mở", U.formatDate(acc.openedDate + "T00:00:00"));
+    const locked = S.isLocked(acc);
     if (isPay) {
       const usedOd = acc.balance < 0 ? -acc.balance : 0;
-      cells += cell("checkCircle", "Trạng thái", "Đang hoạt động", "is-green") +
+      cells += (locked
+          ? cell("lock", "Trạng thái", "Đã khóa" + (acc.lockedAt ? "<small>từ " + U.formatDateTime(acc.lockedAt) + "</small>" : ""), "is-red")
+          : cell("checkCircle", "Trạng thái", "Đang hoạt động", "is-green")) +
         cell("wallet", "Số dư hiện tại", U.formatVND(acc.balance), "is-big" + (acc.balance < 0 ? " is-red" : "")) +
         cell("gauge", "Hạn mức thấu chi", U.formatVND(acc.overdraftLimit), "is-big") +
         cell("alert", "Đang dùng thấu chi", U.formatVND(usedOd)) +
@@ -130,20 +138,63 @@ App.boot(function () {
         '<div class="acct-detail__head">' +
           '<img class="acct-detail__art" src="assets/images/' + (isPay ? "bank-cards.png" : "piggy.png") + '" alt="">' +
           '<h2 class="modal__title">Chi tiết ' + U.escapeHtml(lowerFirst(acc.name)) + "</h2>" +
-          '<span class="badge badge--success badge--dot badge--sm">Đang hoạt động</span>' +
+          App.money.accountStatusBadge(acc) +
         "</div>" +
         '<div class="info-grid" style="margin-top:16px">' + cells + "</div>" +
         (term ? '<p class="modal__desc" style="margin-top:10px">Tiền lãi dự kiến tính cho kỳ hạn hiện tại (' + term.days + " ngày, từ " + U.formatDate(term.start) + "). Sổ tự động tái tục khi đến hạn.</p>" : "") +
+        lockPanel(acc) +
         '<div class="modal__foot">' +
           '<button type="button" class="btn btn--outline btn--lg" data-close>Đóng</button>' +
-          '<button type="button" class="btn btn--primary btn--lg" data-go-deposit>' + App.icon("wallet", 20) + "Nạp tiền</button>" +
+          '<button type="button" class="btn btn--primary btn--lg" data-go-deposit' + (locked ? ' disabled title="Tài khoản đang bị khóa"' : "") + ">" +
+            App.icon("wallet", 20) + "Nạp tiền</button>" +
         "</div>"
     });
-    box.addEventListener("click", function (e) {
+    box.addEventListener("click", async function (e) {
       const cp = e.target.closest("[data-copy]");
       if (cp) U.copyToClipboard(cp.dataset.copy, "Đã sao chép số tài khoản");
-      if (e.target.closest("[data-go-deposit]")) App.money.openDeposit(acc.id);
+      const dep = e.target.closest("[data-go-deposit]");
+      if (dep && !dep.disabled) App.money.openDeposit(acc.id);
+
+      // ----- Khóa / mở khóa (tuần 4) -----
+      const panel = box.querySelector("[data-lock-panel]");
+      if (e.target.closest("[data-lock-ask]")) { panel.classList.add("is-confirm"); box.querySelector("[data-lock-yes]").focus(); return; }
+      if (e.target.closest("[data-lock-no]")) { panel.classList.remove("is-confirm"); return; }
+      const go = e.target.closest("[data-lock-yes], [data-unlock]");
+      if (!go || go.disabled) return;
+      const wantLock = go.hasAttribute("data-lock-yes");
+      go.disabled = true;
+      const res = await S.setLocked(acc.id, wantLock);
+      if (!res.ok) {
+        go.disabled = false;
+        panel.querySelector("[data-lock-error]").textContent = res.error;
+        return;
+      }
+      U.showToast(wantLock ? "Đã khóa " + acc.name : "Đã mở khóa " + acc.name, wantLock ? "info" : undefined);
+      openDetail(acc.id);             // mở lại (thay modal cũ) để thấy trạng thái mới
     });
+  }
+
+  /** Khối khóa / mở khóa trong chi tiết tài khoản (tuần 4) */
+  function lockPanel(acc) {
+    if (S.isLocked(acc)) {
+      return '<div class="lock-panel lock-panel--locked" data-lock-panel>' +
+        '<div class="lock-panel__text">' + App.icon("lock", 20) +
+          "<div><strong>Tài khoản đang bị khóa</strong><span>Không nạp, rút, chuyển hay nhận tiền. Lịch sử và tiền lãi vẫn giữ nguyên.</span></div></div>" +
+        '<button type="button" class="btn btn--outline lock-panel__btn" data-unlock>' + App.icon("unlock", 18) + "Mở khóa</button>" +
+        '<p class="field-error" role="alert" data-lock-error></p>' +
+      "</div>";
+    }
+    return '<div class="lock-panel" data-lock-panel>' +
+      '<div class="lock-panel__text">' + App.icon("shield", 20) +
+        "<div><strong>Khóa tạm thời</strong><span>Dùng khi nghi lộ thông tin. Mở khóa lại bất cứ lúc nào.</span></div></div>" +
+      '<button type="button" class="btn btn--outline-red lock-panel__btn" data-lock-ask>' + App.icon("lock", 18) + "Khóa tài khoản</button>" +
+      '<div class="lock-panel__confirm" role="alertdialog" aria-label="Xác nhận khóa tài khoản">' +
+        "<span>Khóa " + U.escapeHtml(lowerFirst(acc.name)) + "? Bạn sẽ không nạp, rút, chuyển hay nhận tiền cho đến khi mở khóa.</span>" +
+        '<div class="lock-panel__actions"><button type="button" class="btn btn--soft" data-lock-no>Hủy</button>' +
+        '<button type="button" class="btn btn--red" data-lock-yes>' + App.icon("lock", 16) + "Xác nhận khóa</button></div>" +
+      "</div>" +
+      '<p class="field-error" role="alert" data-lock-error></p>' +
+    "</div>";
   }
 
   /* ---------- Modal mở tài khoản mới ---------- */
@@ -367,9 +418,9 @@ App.boot(function () {
     const d = t.closest("[data-detail]");
     if (d) { openDetail(d.dataset.detail); return; }
     const dep = t.closest("[data-deposit]");
-    if (dep) { App.money.openDeposit(dep.dataset.deposit); return; }
+    if (dep) { if (!dep.disabled) App.money.openDeposit(dep.dataset.deposit); return; }
     const w = t.closest("[data-withdraw]");
-    if (w) { App.money.openWithdraw(w.dataset.withdraw); }
+    if (w && !w.disabled) { App.money.openWithdraw(w.dataset.withdraw); }
   });
   U.qs("[data-open-account]").addEventListener("click", openNewAccount);
   els.chartAccount.addEventListener("change", function () { renderChart(true); });

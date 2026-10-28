@@ -47,19 +47,31 @@ App.boot(function () {
     const accounts = S.getAccounts();
     const keepFrom = els.from.value;
     const keepTo = els.to.value;
-    els.from.innerHTML = accounts.map(function (a) {
-      return '<option value="' + a.id + '">' + U.escapeHtml(accLabel(a)) + "</option>";
-    }).join("");
+    // Tài khoản bị khóa vẫn hiện nhưng không chọn được (tuần 4)
+    const option = function (a) {
+      const locked = S.isLocked(a);
+      return '<option value="' + a.id + '"' + (locked ? " disabled" : "") + ">" + U.escapeHtml(accLabel(a)) + (locked ? " – đã khóa" : "") + "</option>";
+    };
+    const usable = function (id) { const a = id && S.getAccount(id); return !!a && !S.isLocked(a); };
+    els.from.innerHTML = accounts.map(option).join("");
     const wanted = new URLSearchParams(window.location.search).get("from");
-    if (keepFrom && S.getAccount(keepFrom)) els.from.value = keepFrom;
-    else if (wanted && S.getAccount(wanted)) els.from.value = wanted;
-    else if (S.getPrimary("payment")) els.from.value = S.getPrimary("payment").id;
+    const primary = S.getPrimary("payment");
+    const firstActive = accounts.find(function (a) { return !S.isLocked(a); });
+    if (usable(keepFrom)) els.from.value = keepFrom;
+    else if (usable(wanted)) els.from.value = wanted;
+    else if (primary && usable(primary.id)) els.from.value = primary.id;
+    else if (firstActive) els.from.value = firstActive.id;
+    else els.from.value = "";
 
     const others = accounts.filter(function (a) { return a.id !== els.from.value; });
     els.to.innerHTML = others.length
-      ? others.map(function (a) { return '<option value="' + a.id + '">' + U.escapeHtml(accLabel(a)) + "</option>"; }).join("")
+      ? others.map(option).join("")
       : '<option value="">Bạn chưa có tài khoản khác</option>';
-    if (keepTo && others.some(function (a) { return a.id === keepTo; })) els.to.value = keepTo;
+    if (usable(keepTo) && others.some(function (a) { return a.id === keepTo; })) els.to.value = keepTo;
+    else {
+      const t = others.find(function (a) { return !S.isLocked(a); });
+      els.to.value = t ? t.id : "";
+    }
     U.qs('[data-tf-mode="own"]').disabled = others.length === 0;
     if (!others.length && mode === "own") setMode("other");
   }
@@ -115,6 +127,10 @@ App.boot(function () {
       if (data.number.length < 6 || data.number.length > 19) errors.push({ field: "number", msg: "Số tài khoản nhận phải gồm 6 đến 19 chữ số." });
       else if (!data.toAcc && !data.name) errors.push({ field: "name", msg: "Vui lòng nhập tên người nhận." });
     }
+    if (data.from && S.isLocked(data.from)) errors.push({ field: "from", msg: "Tài khoản nguồn đang bị khóa." });
+    if (data.toAcc && S.isLocked(data.toAcc) && (!data.from || data.toAcc.id !== data.from.id)) {
+      errors.push({ field: mode === "own" ? "to" : "number", msg: "Tài khoản nhận đang bị khóa." });
+    }
     if (data.from && data.toAcc && data.toAcc.id === data.from.id) {
       errors.push({ field: mode === "own" ? "to" : "number", msg: "Không thể chuyển tiền vào chính tài khoản nguồn." });
     }
@@ -122,7 +138,7 @@ App.boot(function () {
     if (!data.amount) errors.push({ field: "amount", msg: "Vui lòng nhập số tiền lớn hơn 0." });
     else if (data.amount < MIN) errors.push({ field: "amount", msg: "Số tiền chuyển tối thiểu là " + U.formatVND(MIN) + "." });
     else if (data.amount > MAX) errors.push({ field: "amount", msg: "Số tiền tối đa mỗi lần chuyển là " + U.formatVND(MAX) + "." });
-    else if (data.from) {
+    else if (data.from && !S.isLocked(data.from)) {
       const check = S.checkWithdraw(data.from.id, data.amount, "chuyển");
       if (!check.ok) errors.push({ field: "amount", msg: check.error });
       else if (check.usesOverdraft) {
@@ -168,7 +184,7 @@ App.boot(function () {
 
     // Lỗi về số tiền hiện ngay khi gõ; lỗi khác chỉ hiện sau khi bấm Tiếp tục
     const shown = result.errors.filter(function (e) {
-      return touched || (e.field === "amount" && data.amount > 0) || (e.msg.indexOf("chính tài khoản") >= 0);
+      return touched || (e.field === "amount" && data.amount > 0) || (e.msg.indexOf("chính tài khoản") >= 0) || (e.msg.indexOf("bị khóa") >= 0);
     });
     els.error.textContent = shown.length ? shown[0].msg : "";
     els.wrap.classList.toggle("is-error", shown.some(function (e) { return e.field === "amount"; }));

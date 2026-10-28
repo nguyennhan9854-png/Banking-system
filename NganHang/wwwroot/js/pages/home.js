@@ -36,7 +36,8 @@ App.boot(function () {
       '<article class="home-acc ' + (isPay ? "home-acc--pay" : "home-acc--save") + '">' +
         '<span class="home-acc__icon">' + App.icon(isPay ? "wallet" : "piggy", 32) + "</span>" +
         '<div class="home-acc__body">' +
-          '<h3 class="home-acc__title">' + U.escapeHtml(acc.name) + "</h3>" +
+          '<h3 class="home-acc__title">' + U.escapeHtml(acc.name) +
+            (S.isLocked(acc) ? ' <span class="badge badge--locked badge--sm">' + App.icon("lock", 12, 2.4) + "Đã khóa</span>" : "") + "</h3>" +
           '<div class="home-acc__num">STK: ' + acc.accountNumber +
             '<button type="button" class="copy-btn" data-copy="' + acc.accountNumber.replace(/\s/g, "") + '" aria-label="Sao chép số tài khoản ' + U.escapeHtml(acc.name) + '">' + App.icon("copy", 16) + "</button></div>" +
           '<div class="home-acc__bal' + (acc.balance < 0 ? " is-negative" : "") + '" data-balance="' + acc.balance + '">' + U.formatVND(acc.balance) + "</div>" +

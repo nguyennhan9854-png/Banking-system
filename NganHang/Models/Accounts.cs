@@ -40,6 +40,9 @@ public abstract class Account
     /// <summary>"active" = đang hoạt động, "locked" = bị khóa</summary>
     public string Status { get; set; } = "active";
 
+    /// <summary>Thời điểm bị khóa (null = đang hoạt động). Tuần 4.</summary>
+    public DateTime? LockedAt { get; set; }
+
     /// <summary>Ngày mở dạng yyyy-MM-dd</summary>
     public string OpenedDate { get; set; } = "";
     public string ProductName { get; set; } = "";
