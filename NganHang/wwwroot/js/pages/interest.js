@@ -41,16 +41,18 @@ App.boot(function () {
   /* ---------- Thẻ từng tài khoản ---------- */
   function accountCard(a) {
     const it = a.interest;
+    const locked = S.isLocked(a);     // tuần 4: sổ bị khóa vẫn hiện, lãi vẫn cộng tự động
     const pct = it.daysInPeriod ? Math.min(100, Math.round((it.daysElapsed / it.daysInPeriod) * 100)) : 0;
     const fig = function (label, value, cls) {
       return '<div class="it-fig"><div class="it-fig__label">' + label + '</div><div class="it-fig__value' + (cls ? " " + cls : "") + '">' + value + "</div></div>";
     };
     return (
-      '<article class="it-acc" id="it-' + a.id + '" data-acc="' + a.id + '">' +
+      '<article class="it-acc' + (locked ? " it-acc--locked" : "") + '" id="it-' + a.id + '" data-acc="' + a.id + '">' +
         '<div class="it-acc__head">' +
           '<span class="it-acc__icon"><img src="assets/images/piggy.png" alt=""></span>' +
           "<div style=\"min-width:0\"><div class=\"it-acc__title\">" + U.escapeHtml(a.name) + "</div>" +
-          '<div class="it-acc__num">' + a.accountNumber + " · Kỳ hạn " + a.termMonths + " tháng</div></div>" +
+          '<div class="it-acc__num">' + a.accountNumber + " · Kỳ hạn " + a.termMonths + " tháng</div>" +
+          (locked ? '<div style="margin-top:4px">' + App.money.accountStatusBadge(a) + "</div>" : "") + "</div>" +
           '<span class="it-acc__rate">' + U.formatPercent(a.interestRate, 1) + "/năm</span>" +
         "</div>" +
         '<div class="it-period">' +
@@ -64,10 +66,16 @@ App.boot(function () {
           fig("Lãi tạm tính", (it.accruedInterest > 0 ? "+" : "") + U.formatVND(it.accruedInterest), "is-green") +
           fig("Lãi dự kiến tháng này", U.formatVND(it.projectedInterest)) +
         "</div>" +
+        (locked
+          ? '<p class="it-locked-note">' + App.icon("lock", 16, 2.4) + "Sổ đang bị khóa: lãi vẫn được cộng tự động mỗi tháng, " +
+            'nhưng chưa nhận lãi ngay hay nạp thêm được. <a href="tai-khoan.html#' + a.id + '">Mở khóa</a></p>'
+          : "") +
         '<div class="it-acc__actions">' +
-          '<button type="button" class="btn btn--green" data-apply="' + a.id + '"' + (it.accruedInterest > 0 ? "" : ' disabled title="Chưa có tiền lãi để nhận"') + ">" +
+          '<button type="button" class="btn btn--green" data-apply="' + a.id + '"' +
+            (locked ? ' disabled title="Sổ đang bị khóa"' : it.accruedInterest > 0 ? "" : ' disabled title="Chưa có tiền lãi để nhận"') + ">" +
             App.icon("percent", 18, 2.4) + "Nhận lãi ngay</button>" +
-          '<button type="button" class="btn btn--outline" data-deposit="' + a.id + '">' + App.icon("wallet", 18) + "Nạp thêm</button>" +
+          '<button type="button" class="btn btn--outline" data-deposit="' + a.id + '"' + (locked ? ' disabled title="Sổ đang bị khóa"' : "") + ">" +
+            App.icon("wallet", 18) + "Nạp thêm</button>" +
         "</div>" +
       "</article>"
     );
@@ -116,7 +124,7 @@ App.boot(function () {
   /* ---------- Sự kiện ---------- */
   els.accounts.addEventListener("click", async function (e) {
     const dep = e.target.closest("[data-deposit]");
-    if (dep) { App.money.openDeposit(dep.dataset.deposit); return; }
+    if (dep) { if (!dep.disabled) App.money.openDeposit(dep.dataset.deposit); return; }
     const btn = e.target.closest("[data-apply]");
     if (!btn || btn.disabled) return;
     const id = btn.dataset.apply;

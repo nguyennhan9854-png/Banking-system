@@ -121,7 +121,8 @@ App.boot(function () {
         cell("wallet", "Số dư hiện tại", U.formatVND(acc.balance), "is-big" + (acc.balance < 0 ? " is-red" : "")) +
         cell("gauge", "Hạn mức thấu chi", U.formatVND(acc.overdraftLimit), "is-big") +
         cell("alert", "Đang dùng thấu chi", U.formatVND(usedOd)) +
-        cell("trendUp", "Số tiền khả dụng", U.formatVND(acc.balance + acc.overdraftLimit), "is-big");
+        // Sửa tuần 4: lấy số khả dụng do server tính (tài khoản bị khóa = 0), không tự cộng ở giao diện
+        cell("trendUp", "Số tiền khả dụng", U.formatVND(acc.availableBalance), "is-big");
     } else {
       const term = S.savingTerm(acc);
       cells += cell("clock", "Kỳ hạn", acc.termMonths + " tháng") +
@@ -395,7 +396,8 @@ App.boot(function () {
         const isIn = S.TX_TYPES[tx.type].dir === "in";
         return '<tr class="is-clickable' + (tx.status === "failed" ? " is-failed" : "") + '" tabindex="0" data-tx="' + tx.id + '">' +
           '<td><div class="cell-time">' + App.money.txIconHtml(tx, 15) + "<span>" + U.formatDate(tx.date) + "<br>" + U.formatTime(tx.date) + "</span></div></td>" +
-          '<td class="cell-2l cell-acc">' + (acc ? (acc.type === "saving" ? "Tiết kiệm" : "Thanh toán") : "—") + "<small>" + (acc ? U.maskNumber(acc.accountNumber) : "") + "</small></td>" +
+          // Sửa tuần 4: ghi đúng tên tài khoản (có 2 sổ tiết kiệm thì trước đây đều hiện "Tiết kiệm")
+          '<td class="cell-2l cell-acc">' + (acc ? U.escapeHtml(acc.name) : "—") + "<small>" + (acc ? U.maskNumber(acc.accountNumber) : "") + "</small></td>" +
           '<td class="cell-2l">' + U.escapeHtml(tx.title) + "<small>" + U.escapeHtml(tx.subtitle || "") + "</small></td>" +
           '<td class="t-right cell-amount ' + (isIn ? "money-in" : "money-out") + '">' + U.formatSigned(isIn ? tx.amount : -tx.amount) + "</td>" +
           '<td class="t-right cell-balance">' + U.formatVND(tx.balanceAfter) + "</td></tr>";

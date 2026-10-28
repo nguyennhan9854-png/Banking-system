@@ -106,8 +106,12 @@ public sealed class SavingAccount : Account
     /// </summary>
     public DateTime? LastInterestDate { get; set; }
 
+    /// <summary>
+    /// Có lãi suất là được cộng lãi – KỂ CẢ khi đang bị khóa (tuần 4).
+    /// Khóa chỉ chặn giao dịch do người dùng làm (nạp, rút, chuyển, nhận lãi ngay), không làm mất tiền lãi.
+    /// </summary>
     [JsonIgnore]
-    public override bool EarnsInterest => IsActive && InterestRate > 0;
+    public override bool EarnsInterest => InterestRate > 0;
 
     protected override string SpendError(string verb) =>
         "Số dư không đủ. Số tiền " + verb + " tối đa là " + Vnd(AvailableBalance) + ".";

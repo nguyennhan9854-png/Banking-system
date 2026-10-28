@@ -476,6 +476,9 @@ public class BankService
         if (found == null) return (ServiceResult<InterestRunResult>.Missing("Không tìm thấy tài khoản."), false);
         if (found is not SavingAccount acc || !acc.EarnsInterest)
             return (ServiceResult<InterestRunResult>.Fail("Chỉ tài khoản tiết kiệm đang hoạt động mới được cộng lãi."), false);
+        if (!acc.IsActive)
+            return (ServiceResult<InterestRunResult>.Fail(
+                "Tài khoản đang bị khóa nên chưa nhận lãi ngay được. Lãi vẫn được cộng tự động mỗi tháng."), false);
 
         var posted = new List<Transaction>();
         var changed = PostDuePeriods(d, acc, now, posted);

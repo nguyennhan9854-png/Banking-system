@@ -98,3 +98,13 @@
 /* Bảng lịch sử: màn hẹp thì cuộn ngang trong card thay vì bóp cột */
 .it-page .table-wrap > .table { min-width: 640px; }
 .it-page .table td:nth-child(3) { min-width: 180px; }
+
+/* Tuần 4: sổ tiết kiệm đang bị khóa */
+.it-acc--locked .it-acc__icon img { filter: grayscale(.7); }
+.it-locked-note {
+  display: flex; gap: 8px; align-items: flex-start; margin: 0;
+  padding: 10px 12px; border-radius: 10px; background: var(--red-soft); color: var(--red);
+  font-size: 13.5px; line-height: 1.5;
+}
+.it-locked-note .ic { flex: none; margin-top: 2px; }
+.it-locked-note a { color: inherit; font-weight: 700; text-decoration: underline; }

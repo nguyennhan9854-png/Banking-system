@@ -89,7 +89,7 @@ Test chứng minh: `OOP05`, `OOP06` trong [NganHang.Tests/AccountModelTests.cs](
 | Thành phần trong `Account` | `SavingAccount` | `PaymentAccount` |
 |---|---|---|
 | `AvailableBalance` (số tiền được chi) | số dư, không âm | số dư + hạn mức thấu chi |
-| `EarnsInterest` (có được cộng lãi) | có, nếu đang hoạt động và lãi suất > 0 | không |
+| `EarnsInterest` (có được cộng lãi) | có, nếu lãi suất > 0 (tuần 4: kể cả khi đang bị khóa) | không |
 | `UsesOverdraft(amount)` | luôn không | có, nếu chi vượt số dư |
 | `SpendError(verb)` (thông báo khi chi vượt) | "Số dư không đủ…" | "…vượt quá hạn mức khả dụng" |
 

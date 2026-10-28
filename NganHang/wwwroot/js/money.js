@@ -26,7 +26,7 @@ App.money = (function () {
     let extra = "";
     if (mode === "withdraw" && isPay) {
       extra = '<div class="acc-block__meta">Hạn mức thấu chi: <strong>' + U.formatVND(acc.overdraftLimit) + "</strong></div>" +
-        '<div class="acc-block__meta">Số tiền khả dụng: <strong>' + U.formatVND(acc.balance + acc.overdraftLimit) + "</strong></div>";
+        '<div class="acc-block__meta">Số tiền khả dụng: <strong>' + U.formatVND(acc.availableBalance) + "</strong></div>";
     }
     return (
       '<div class="acc-block acc-block--' + (isPay ? "pay" : "save") + '">' +

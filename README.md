@@ -51,7 +51,7 @@ NganHang/
 | POST | `/api/transfers` | Chuyển tiền (nội bộ: `toAccountId`; ra ngoài: `toAccountNumber`, `toName`, `toBank`) |
 | POST | `/api/interest/run` | Chạy ngay đợt cộng lãi tự động (chỉ cộng kỳ đã đến hạn) |
 | POST | `/api/interest/{accountId}/apply` | Nhận ngay tiền lãi tạm tính của tài khoản tiết kiệm |
-| POST | `/api/accounts/{id}/lock` | Khóa / mở khóa tài khoản `{ "locked": true }` |
+| POST | `/api/accounts/{id}/lock` | Khóa / mở khóa tài khoản `{ "locked": true }` (tuần 4: có nút trong Chi tiết tài khoản) |
 | GET | `/api/statistics?from=&to=&groupBy=&accountId=` | Thống kê theo kỳ (`month`/`quarter`/`day`): đầu kỳ, vào, ra, lãi, cuối kỳ |
 | GET | `/api/transactions?accountId=&limit=` | Lịch sử giao dịch (có số dư sau GD) |
 | GET | `/api/balance-history?accountIds=&from=&to=&mode=` | Dữ liệu biểu đồ (`monthly`/`weekly`/`daily`) |
@@ -80,6 +80,8 @@ Các test nằm trong thư mục `NganHang.Tests/` (xUnit). Mỗi test dùng m�
 | `EdgeCaseTests.cs` | Tuần 3 – biên: số tiền nhỏ nhất/lớn nhất, nhiều lệnh cùng lúc, tài khoản bị khóa, STK có ký tự lạ, file dữ liệu hỏng |
 | `StatisticsTests.cs` | Tuần 3 – thống kê: cuối kỳ = đầu kỳ + vào − ra, lãi từng kỳ khớp lịch sử, chia kỳ tháng/quý/ngày |
 | `AccountModelTests.cs` | Tuần 3 – OOP: kế thừa, đa hình, đóng gói số dư, đọc/ghi JSON đúng lớp con |
+| `LockTests.cs` | Tuần 4 – khóa/mở khóa: thời điểm khóa, khả dụng = 0, khóa 2 lần, lưu file, rollback khi lỗi |
+| `LockedInterestTests.cs` | Tuần 4 – sổ bị khóa vẫn được cộng lãi đúng kỳ, chặn "Nhận lãi ngay", không cộng trùng khi mở khóa |
 | `InterestEdgeTests.cs` | Tuần 3 – biên cộng lãi: tháng 28/29/30/31 ngày, năm nhuận, mở sổ ngày 31, số dư về 0 giữa kỳ, tắt server cả năm |
 
 Giải thích các nguyên lý hướng đối tượng kèm link code: [`docs/Self-Explanation-OOP.md`](docs/Self-Explanation-OOP.md).
@@ -97,7 +99,7 @@ Giải thích các nguyên lý hướng đối tượng kèm link code: [`docs/S
 - **Chuyển tiền:** tối thiểu 10.000 đ; dùng chung quy tắc số dư/thấu chi với rút tiền; không chuyển vào chính tài khoản nguồn; nhập STK trùng tài khoản của mình thì tự xử lý như chuyển nội bộ; chuyển nội bộ tạo 2 giao dịch (chuyển đi + nhận tiền).
 - **Kiểm tra hai lớp:** server luôn kiểm tra lại, kể cả khi giao diện đã kiểm tra.
 - **Rollback:** trước mỗi thao tác ghi, `BankRepository` chụp lại dữ liệu; lỗi ở bất kỳ bước nào (kể cả lỗi ghi file) thì khôi phục bản chụp, file chính không bị ghi dở. `BankService` ghi thêm 1 giao dịch trạng thái `failed` (không làm đổi số dư) và 1 thông báo "thất bại – đã hoàn tác".
-- **Tài khoản bị khóa:** không nạp, rút, chuyển hay nhận tiền.
+- **Tài khoản bị khóa:** không nạp, rút, chuyển hay nhận tiền; số tiền khả dụng = 0; lưu thời điểm khóa. Sổ tiết kiệm bị khóa **vẫn được cộng lãi tự động** nhưng không "Nhận lãi ngay" được.
 - **File dữ liệu hỏng khi khởi động:** đổi tên thành `bank-data.json.corrupt-...` để giữ lại, rồi tạo dữ liệu mẫu mới.
 - **Thống kê:** chỉ giao dịch thành công mới tính tiền; khi xem tất cả tài khoản, chuyển nội bộ được tính cả vào (TK nhận) lẫn ra (TK nguồn).
 
@@ -118,3 +120,7 @@ Giải thích các nguyên lý hướng đối tượng kèm link code: [`docs/S
 | Tuần 3 | Nhân – rollback, giao dịch thất bại, khóa tài khoản, sao lưu file hỏng, test biên | `Data/BankRepository.cs`, `Services/BankService.cs`, `wwwroot/js/pages/transactions.js`, `NganHang.Tests/EdgeCaseTests.cs` |
 | Tuần 3 | Luân – thống kê theo kỳ + trang Thống kê | `Services/BankService.cs`, `Controllers/StatisticsController.cs`, `wwwroot/thong-ke.html`, `wwwroot/js/pages/statistics.js`, `NganHang.Tests/StatisticsTests.cs` |
 | Tuần 3 | Luân – kế thừa / đa hình tài khoản, test biên cộng lãi, Self-Explanation | `Models/Accounts.cs`, `NganHang.Tests/AccountModelTests.cs`, `NganHang.Tests/InterestEdgeTests.cs`, `docs/Self-Explanation-OOP.md` |
+| Tuần 4 | Nhân – test khóa/mở khóa (viết trước) | `NganHang.Tests/LockTests.cs`, `Models/Dtos.cs` |
+| Tuần 4 | Nhân – khóa/mở khóa: thời điểm khóa, khả dụng = 0, nút Khóa/Mở khóa, nhãn "Đã khóa", chặn nạp/rút/chuyển trên giao diện | `Models/Accounts.cs`, `Services/BankService.cs`, `wwwroot/js/pages/accounts.js`, `wwwroot/js/money.js`, `wwwroot/js/pages/transfer.js`, `wwwroot/js/store.js` |
+| Tuần 4 | Luân – test cộng lãi khi sổ bị khóa (viết trước) | `NganHang.Tests/LockedInterestTests.cs`, `NganHang.Tests/AccountModelTests.cs` |
+| Tuần 4 | Luân – sổ bị khóa vẫn có lãi; rà soát sửa lỗi hiển thị (số khả dụng, tên tài khoản, trang Cộng lãi) | `Models/Accounts.cs`, `Services/BankService.cs`, `wwwroot/js/pages/interest.js`, `wwwroot/js/pages/accounts.js` |
